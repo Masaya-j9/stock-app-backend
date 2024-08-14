@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  api:
+    container_name: nestjsApi
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    build: .
+    tty: true
+    ports:
+      - "4000:4000"
+    volumes:
+      - type: bind
+        source: .
+        target: /api
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    restart: always
+    container_name: mysql_stock_app
+    ports:
+      - 3306:3306
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./db/data:/var/lib/mysql

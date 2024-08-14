@@ -1,0 +1,13 @@
+#Node.jsモジュール
+node_modules/
+
+#ビルド青果物
+dist/
+db/
+
+#環境変数
+.env
+
+#その他
+.git/
+.gitignore
