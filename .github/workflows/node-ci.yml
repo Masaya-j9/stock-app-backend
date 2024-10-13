@@ -25,11 +25,14 @@ jobs:
         with:
           path: ~/.npm
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
+          restore-keys:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
+
+      - name: Build
+        run: npm run build
 
       - name: Run lint
         run: npm run lint -- --no-fix
