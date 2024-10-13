@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
-
+import { Observable, of } from 'rxjs';
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hello World!';
+  getObservableHelloWorld(): Observable<string> {
+    return of('Hello World!');
   }
 }
