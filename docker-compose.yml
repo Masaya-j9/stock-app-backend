@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   api:
     container_name: nestjsApi
@@ -32,4 +30,8 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - ./db/data:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
+    user: "1000:1000"
+
+volumes:
+  mysql_data:
