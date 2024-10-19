@@ -1,0 +1,145 @@
+@startuml stock_app
+
+'  ユーザー関連
+entity "Users" as users {
+  *id: integer <<PK>>,
+  --
+  role_id: integer <<FK>>
+  comment_id: integer <<FK>>
+  name: string,
+  email: string,
+  password: string,
+  created_at: datetime,
+  updated_at: datetime,
+}
+
+' 一般ユーザーか管理者かを分ける
+entity "Roles" as roles {
+  *id: integer <<PK>>,
+  --
+  name: string,
+  description: string,
+  created_at: datetime,
+  updated_at: datetime,
+}
+
+' マイページ画面で利用
+entity "Profiles" as profiles {
+  *id: integer <<PK>>,
+  --
+  user_id: integer <<FK>>,
+  description: string,
+  created_at: datetime,
+  updated_at: datetime,
+}
+
+' ユーザーが借りている物にコメントを入れる
+entity "Comments" as comments {
+  *id: integer <<PK>>,
+  --
+  description: string,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+' 商品関連
+' 商品登録で利用
+entity "Items" as items {
+  *id: integer <<PK>>,
+  --
+  name: string,
+  quantity: integer,
+  category_id: integer <<FK>>,
+  description: string,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "Categories" as categories {
+  *id: integer <<PK>>,
+  --
+  name: string,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+' 在庫管理で利用
+entity "Stocks" as stocks {
+  *id: integer <<PK>>,
+  --
+  item_id: integer <<FK>>,
+  quantity: integer,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "StockHistories" as stock_histories {
+  *id: integer <<PK>>,
+  --
+  stock_id: integer <<FK>>,
+  quantity: integer,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+' レンタル関連
+entity "Borrowings" as borrowings {
+  *id: integer <<PK>>,
+  --
+  stock_id: integer <<FK>>,
+  quantity: integer,
+  is_returned: boolean,
+  borrow_date: datetime,
+  return_date: datetime,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+' 中間テーブル
+entity "UserBorrowings" as user_borrowings {
+  *id: integer <<PK>>,
+  --
+  user_id: integer <<FK>>,
+  borrowing_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "UserComments" as user_comments {
+  *id: integer <<PK>>,
+  --
+  user_id: integer <<FK>>,
+  comment_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "ItemCategories" as item_categories {
+  *id: integer <<PK>>,
+  --
+  item_id: integer <<FK>>,
+  category_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "BorrowingComments" as borrowing_comments {
+  *id: integer <<PK>>,
+  --
+  borrowing_id: integer <<FK>>,
+  comment_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+@enduml

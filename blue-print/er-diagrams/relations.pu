@@ -1,0 +1,30 @@
+@startuml relations
+!include tables.pu
+
+users ||-l-o| profiles : one
+
+roles ||--o{ users : has
+
+' 中間テーブル
+users o-u-o{ user_borrowings: has
+borrowings o--o{ user_borrowings: many
+
+' 中間テーブル
+users o-r-o{ user_comments: many
+comments o--o{ user_comments: many
+
+' 中間テーブル
+borrowings o-r-o{ borrowing_comments: many
+comments o-u-o{ borrowing_comments: many
+
+' 中間テーブル
+categories ||-u-o{ item_categories : many
+items ||--o{ item_categories : many
+
+stocks o--o items : one
+
+stocks o--o{ borrowings: has
+
+stocks ||-l-o{ stock_histories : has
+
+@enduml
