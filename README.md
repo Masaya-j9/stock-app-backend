@@ -22,6 +22,17 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
+## モデリングした内容について
+### ユビキタス言語について
+- [ユビキタス言語集のURL](https://docs.google.com/spreadsheets/d/1iG-OT2WOR4m4MekhEshM-utDvKH2KD6XZsPkvSSkf1k/edit?gid=0#gid=0)を参照
+
+### ユースケースについて
+![ユースケース図について](assets/usecase-diagram.png)
+### ドメインモデルについて
+![ドメインモデル図について](assets/domain-model.png)
+### データベース設計について
+![ER図について](assets/relations.png)
+
 ## dockerの起動方法
 
 ### Buildコマンド

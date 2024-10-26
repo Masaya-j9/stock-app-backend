@@ -1,0 +1,37 @@
+
+ユースケース図の基本的なテンプレートを以下に示します。このテンプレートでは、一般的なアクター（例: User, Admin）とそれぞれがアクセスするユースケース（例: ログイン、マイページ、登録機能）を配置しています。
+
+plantuml
+コードをコピーする
+@startuml usecase-diagram
+
+' アクターの定義
+actor "User" as user
+actor "Admin" as admin
+
+' ユースケースの定義
+user --> (ログイン)
+admin --> (ログイン)
+(ログイン) --> (マイページ)
+user --> (レンタル)
+admin --> (物品登録) : Admin専用
+
+' レンタル商品にコメントを入れる機能
+user --> (コメントを追加) : レンタル中の商品
+
+' 例: 一般ユーザーのユースケース
+(Mypage) <|-- (User's Action) : 継承
+user --> (Rent item)
+user --> (View Profile)
+user --> (Edit Profile)
+
+' 例: 管理者のユースケース
+admin --> (Admin dashboard)
+admin --> (Manage Users)
+admin --> (Register Item)
+
+'ユースケース同士の関連を表す
+(Mypage) --> (Use Feature A)
+(Mypage) --> (Use Feature B)
+
+@enduml
