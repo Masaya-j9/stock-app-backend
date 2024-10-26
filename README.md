@@ -23,6 +23,11 @@
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
 ## モデリングした内容について
+### APIドキュメントについて
+起動後、以下のエンドポイントをブラウザでアクセスする
+```
+http://localhost:4000/swagger
+```
 ### ユビキタス言語について
 - [ユビキタス言語集のURL](https://docs.google.com/spreadsheets/d/1iG-OT2WOR4m4MekhEshM-utDvKH2KD6XZsPkvSSkf1k/edit?gid=0#gid=0)を参照
 
