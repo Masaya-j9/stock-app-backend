@@ -1,0 +1,83 @@
+@startuml domain-model
+
+class User {
+  - userId: ID
+  - name: String
+  - email: String
+  - password: String
+  + rentItem(items: List<Item>, quantity: Integer): Borrowing
+  + addComment(borrowing: Borrowing, content: String): Comment
+  + checkStock(item: Item): Stock
+  + deleteComment(comment: Comment)
+}
+
+class Role {
+  - roleId: ID
+  - name: String
+  - description: String
+  + isAdmin(): Boolean
+}
+
+class Profile {
+  - profileId: ID
+  - userId: ID
+  - description: String
+}
+
+class Comment {
+  - commentId: ID
+  - content: String
+  - createdAt: Date
+  + editContent(newContent: String)
+  + deleteComment()
+}
+
+class Item {
+  - itemId: ID
+  - name: String
+  - quantity: Integer
+  + checkAvailability(): Boolean
+  + registerItem()
+}
+
+class Category {
+  - categoryId: ID
+  - name: String
+}
+
+class Stock {
+  - stockId: ID
+  - itemId: ID
+  - quantity: Integer
+  + addStock(quantity: Integer)
+  + removeStock(quantity: Integer)
+}
+
+class StockHistory {
+  - historyId: ID
+  - stockId: ID
+  - quantity: Integer
+  - createdAt: Date
+}
+
+class Borrowing {
+  - borrowingId: ID
+  - stockId: ID
+  - quantity: Integer
+  - isReturned: Boolean
+  - borrowDate: Date
+  - returnDate: Date
+  + markAsReturned()
+}
+
+User "1" --> "1" Role
+User "1" --> "1" Profile
+User "1" --> "0..*" Borrowing : borrows
+User "1" --> "0..*" Comment : writes
+Borrowing "1" --> "1" Stock : is for
+Borrowing "1" --> "0..*" Comment : includes
+Stock "1" --> "1" Item
+Item "1" --> "0..*" Category : belongs to
+Stock "1" --> "0..*" StockHistory : logs
+
+@enduml
