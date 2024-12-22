@@ -23,8 +23,20 @@ items ||--o{ item_categories : many
 
 stocks o--o items : one
 
-stocks o--o{ borrowings: has
-
 stocks ||-l-o{ stock_histories : has
+
+' 中間テーブル
+stocks o-l-o{ borrowing_stocks : many
+stocks o-u-o{ return_stocks : many
+
+' 中間テーブル
+borrowings o-u-o{ borrowing_returns : many
+borrowings o-r-o{ borrowing_stocks : many
+
+' 中間テーブル
+returns o-r-o{ borrowing_returns : many
+returns o--o{ return_stocks : many
+
+statuses ||-l-o{ borrowing_returns : many
 
 @enduml

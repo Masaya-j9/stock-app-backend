@@ -92,9 +92,25 @@ entity "Borrowings" as borrowings {
   --
   stock_id: integer <<FK>>,
   quantity: integer,
-  is_returned: boolean,
-  borrow_date: datetime,
-  return_date: datetime,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "Returns" as returns {
+  *id: integer <<PK>>,
+  --
+  stock_id: integer <<FK>>,
+  quantity: integer,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "Statuses" as statuses {
+  *id: integer <<PK>>,
+  --
+  name: string,
   created_at: datetime,
   updated_at: datetime,
   deleted_at: datetime,
@@ -136,6 +152,37 @@ entity "BorrowingComments" as borrowing_comments {
   --
   borrowing_id: integer <<FK>>,
   comment_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "BorrowingReturns" as borrowing_returns {
+  *id: integer <<PK>>,
+  --
+  borrowing_id: integer <<FK>>,
+  return_id: integer <<FK>>,
+  status_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "BorrowingStocks" as borrowing_stocks {
+  *id: integer <<PK>>,
+  --
+  borrowing_id: integer <<FK>>,
+  stock_id: integer <<FK>>,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "ReturnStocks" as return_stocks {
+  *id: integer <<PK>>,
+  --
+  return_id: integer <<FK>>,
+  stock_id: integer <<FK>>,
   created_at: datetime,
   updated_at: datetime,
   deleted_at: datetime,
