@@ -1,3 +1,3 @@
-import { outputDto } from '../../output/output.dto';
+import { OutputDto } from '../../output/output.dto';
 
-export class SignUpInputDto implements outputDto {}
+export class SignUpInputDto implements OutputDto {}
