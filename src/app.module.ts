@@ -5,10 +5,11 @@ import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ormConfig } from './infrastructure/orm/orm.config';
 import { HealthModule } from './presentation/modules/health.module';
+import { UserModule } from './presentation/modules/user.module';
 import { LoggerInterceptor } from './common/utils/logger.inspector';
 
 @Module({
-  imports: [TypeOrmModule.forRoot(ormConfig), HealthModule],
+  imports: [TypeOrmModule.forRoot(ormConfig), HealthModule, UserModule],
   controllers: [AppController],
   providers: [
     AppService,

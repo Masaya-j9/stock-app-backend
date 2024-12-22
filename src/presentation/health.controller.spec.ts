@@ -5,7 +5,7 @@ import {
   HealthCheckResult,
   TerminusModule,
 } from '@nestjs/terminus';
-import { HealthController } from './health.controller';
+import { HealthController } from './controllers/health.controller';
 
 describe('HealthController', () => {
   let healthController: HealthController;
