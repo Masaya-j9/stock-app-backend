@@ -36,7 +36,20 @@ http://localhost:4000/swagger
 ### ドメインモデルについて
 ![ドメインモデル図について](assets/domain-model.png)
 ### データベース設計について
-![ER図について](assets/relations.png)
+![ER図について](assets/relations/20241228185419-relations.png)
+
+
+## READMEの更新
+### ER図
+1. 下記のコマンドでER図の新規画像を作成する
+2. README.mdのパスを張り替える
+
+```
+chmod +x blue-print/shells/diagram.sh
+
+./blue-print/shells/diagram.sh
+```
+
 
 ## dockerの起動方法
 
@@ -58,6 +71,18 @@ http://localhost:4000/swagger
 ### ライブラリのinstall
 ```
 docker run --rm api npm install (ライブラリ名)
+```
+
+## TypeORMについて
+
+### generate(Entityファイル作成の場合)
+```
+ docker compose exec api npm run typeorm:migration:generate ./src/infrastructure/migrations/${作成されるファイル名}
+```
+
+### マイグレーション実行
+```
+docker compose exec api npm run typeorm:migration:run
 ```
 
 ## Description
