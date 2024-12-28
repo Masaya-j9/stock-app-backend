@@ -1,0 +1,50 @@
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToOne,
+  JoinColumn,
+  OneToMany,
+} from 'typeorm';
+import { Items } from './items.entity';
+import { BorrowingStocks } from './intermediates/borrowing.stocks.entity';
+import { ReturnStocks } from './intermediates/return.stocks.entity';
+import { StockHistories } from './stock.histories.entity';
+
+/**
+ * 在庫を管理するStocksテーブルのエンティティ
+ */
+@Entity()
+export class Stocks {
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @OneToOne(() => Items)
+  @JoinColumn({ name: 'item_id' })
+  item: Items;
+
+  @Column()
+  quantity: number;
+
+  @Column()
+  description: string;
+
+  @Column({ name: 'created_at' })
+  createdAt: Date;
+
+  @Column({ name: 'updated_at' })
+  updatedAt: Date;
+
+  @Column({ name: 'deleted_at' })
+  deletedAt: Date;
+
+  @OneToMany(() => StockHistories, (stockHistories) => stockHistories.stock)
+  stockHistories: StockHistories[];
+
+  //中間テーブルへのリレーション
+  @OneToMany(() => BorrowingStocks, (borrowingStocks) => borrowingStocks.stock)
+  borrowingStocks: BorrowingStocks;
+
+  @OneToMany(() => ReturnStocks, (returnStocks) => returnStocks.stock)
+  returnStocks: ReturnStocks;
+}
