@@ -1,0 +1,63 @@
+# Ignore migration files
+src/infrastructure/migrations/**/*.ts
+
+# Ignore database directories
+/db/data/
+
+# Ignore node_modules
+node_modules/
+
+# Ignore build output
+dist/
+
+# Ignore logs
+logs/
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Ignore OS files
+.DS_Store
+
+# Ignore test coverage
+/coverage
+/.nyc_output
+
+# Ignore IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# Ignore IDE - VSCode
+.vscode/*
+.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Ignore dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# Ignore temp directory
+.temp
+.tmp
+
+# Ignore runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Ignore diagnostic reports
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
