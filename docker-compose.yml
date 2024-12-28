@@ -10,7 +10,7 @@ services:
     build: .
     tty: true
     ports:
-      - "4000:4000"
+      - "4000:${API_PORT}"
     volumes:
       - type: bind
         source: .
@@ -23,8 +23,9 @@ services:
     restart: always
     container_name: mysql_stock_app
     ports:
-      - 3306:3306
+      - 3306:${DB_PORT}
     environment:
+      MYSQL_HOST: ${DB_HOST}
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_USER: ${MYSQL_USER}
