@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # 本番環境ステージ
-FROM node:lts-buster-slim
+FROM node:lts-buster-slim as development
 
 # 最終コンテナ内の作業ディレクトリを設定
 WORKDIR /api

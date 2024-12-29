@@ -15,9 +15,9 @@ export const ormConfig: DataSourceOptions = {
   username: configService.get<string>('DB_USERNAME'),
   password: configService.get<string>('DB_PASSWORD'),
   database: configService.get<string>('DB_NAME'),
-  entities: ['src/infrastructure/orm/entities/**/*.ts'], // エンティティのパスを指定
+  entities: ['dist/infrastructure/orm/entities/**/*.js'],
   synchronize: false, // 開発環境用、本番環境ではfalseに設定
-  migrations: ['src/infrastructure/migrations/*.ts'],
+  migrations: ['dist/infrastructure/migrations/**/*.js'],
 };
 
 export const AppDataSource = new DataSource(ormConfig);
