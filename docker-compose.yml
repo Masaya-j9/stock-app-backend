@@ -7,14 +7,20 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
-    build: .
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+      target: development
     tty: true
     ports:
-      - "4000:${API_PORT}"
+      - "4000:4000"
     volumes:
       - type: bind
         source: .
         target: /api
+      - type: volume
+        source: node_modules
+        target: /api/node_modules
     depends_on:
       - db
 
@@ -35,4 +41,5 @@ services:
     user: "1000:1000"
 
 volumes:
+  node_modules:
   mysql_data:
