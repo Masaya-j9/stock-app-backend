@@ -1,5 +1,12 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
-import { UserComments } from './intermediates/user.coments.entity';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  DeleteDateColumn,
+} from 'typeorm';
+import { UserComments } from './intermediates/user.comments.entity';
+import { BorrowingComments } from './intermediates/borrowing.comments.entity';
 
 /**
  * コメントを管理するCommentsテーブルのエンティティ
@@ -19,6 +26,16 @@ export class Comments {
   @Column({ name: 'updated_at' })
   updatedAt: Date;
 
+  @Column({ name: 'deleted_at' })
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
+
   @OneToMany(() => UserComments, (userComment) => userComment.comment)
   userComments: UserComments[];
+
+  @OneToMany(
+    () => BorrowingComments,
+    (borrowingComment) => borrowingComment.comment
+  )
+  borrowingComments: BorrowingComments[];
 }

@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Returns } from '../returns.entity';
 import { Stocks } from '../stocks.entity';
@@ -31,5 +32,6 @@ export class ReturnStocks {
   updatedAt: Date;
 
   @Column({ name: 'deleted_at' })
-  deletedAt: Date;
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 }

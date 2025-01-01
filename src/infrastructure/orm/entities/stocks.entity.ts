@@ -5,6 +5,7 @@ import {
   OneToOne,
   JoinColumn,
   OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Items } from './items.entity';
 import { BorrowingStocks } from './intermediates/borrowing.stocks.entity';
@@ -36,7 +37,8 @@ export class Stocks {
   updatedAt: Date;
 
   @Column({ name: 'deleted_at' })
-  deletedAt: Date;
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 
   @OneToMany(() => StockHistories, (stockHistories) => stockHistories.stock)
   stockHistories: StockHistories[];
@@ -47,4 +49,5 @@ export class Stocks {
 
   @OneToMany(() => ReturnStocks, (returnStocks) => returnStocks.stock)
   returnStocks: ReturnStocks;
+  borrowingComments: any;
 }

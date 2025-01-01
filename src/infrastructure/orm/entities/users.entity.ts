@@ -5,9 +5,10 @@ import {
   ManyToOne,
   JoinColumn,
   OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Roles } from './roles.entity';
-import { UserComments } from './intermediates/user.coments.entity';
+import { UserComments } from './intermediates/user.comments.entity';
 import { UserBorrowings } from './intermediates/user.borrowings.entity';
 
 /**
@@ -38,7 +39,8 @@ export class Users {
   updatedAt: Date;
 
   @Column({ name: 'deleted_at' })
-  deletedAt: Date;
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 
   //中間テーブルへのリレーション
   @OneToMany(() => UserComments, (userComment) => userComment.user)

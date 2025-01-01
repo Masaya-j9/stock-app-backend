@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   OneToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Users } from './users.entity';
 
@@ -27,4 +28,8 @@ export class Profiles {
 
   @Column({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'deleted_at' })
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 }

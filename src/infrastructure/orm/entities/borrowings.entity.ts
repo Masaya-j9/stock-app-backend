@@ -9,6 +9,7 @@ import {
 import { UserBorrowings } from './intermediates/user.borrowings.entity';
 import { BorrowingStocks } from './intermediates/borrowing.stocks.entity';
 import { BorrowingReturns } from './intermediates/borrowing.returns.entity';
+import { BorrowingComments } from './intermediates/borrowing.comments.entity';
 
 /**
  * 貸出を管理するBorrowingsテーブルのエンティティ
@@ -31,7 +32,7 @@ export class Borrowings {
   updatedAt: Date;
 
   @Column({ name: 'deleted_at' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 
   // 中間テーブルへのリレーション
   @OneToMany(() => UserBorrowings, (userBorrowings) => userBorrowings.borrowing)
@@ -48,4 +49,10 @@ export class Borrowings {
     (borrowingReturns) => borrowingReturns.borrowing
   )
   borrowingReturns: BorrowingReturns[];
+
+  @OneToMany(
+    () => BorrowingComments,
+    (borrowingComments) => borrowingComments.borrowing
+  )
+  borrowingComments: BorrowingComments[];
 }

@@ -5,23 +5,26 @@ import {
   ManyToOne,
   DeleteDateColumn,
 } from 'typeorm';
-import { Users } from '../users.entity';
 import { Borrowings } from '../borrowings.entity';
+import { Stocks } from '../stocks.entity';
 
 /**
- * ユーザー情報と貸出情報を管理するUserBorrowingsテーブルのエンティティ
+ * 貸出と貸出状況中のコメントを管理するBorrowingCommentsテーブルのエンティティ
  */
 
 @Entity()
-export class UserBorrowings {
+export class BorrowingComments {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Users, (user) => user.userBorrowings)
-  user: Users;
-
-  @ManyToOne(() => Borrowings, (borrowing) => borrowing.userBorrowings)
+  @ManyToOne(() => Borrowings, (borrowing) => borrowing.borrowingComments)
   borrowing: Borrowings;
+
+  @ManyToOne(() => Stocks, (stock) => stock.borrowingComments)
+  stock: Stocks;
+
+  @Column()
+  comment: string;
 
   @Column({ name: 'created_at' })
   createdAt: Date;

@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Stocks } from './stocks.entity';
 
@@ -28,4 +29,8 @@ export class StockHistories {
 
   @Column({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'deleted_at' })
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 }

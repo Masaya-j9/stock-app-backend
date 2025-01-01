@@ -32,5 +32,5 @@ export class UserComments {
   updatedAt: Date;
 
   @Column({ name: 'deleted_at' })
-  deletedAt: Date;
+  deletedAt: Date | null;
 }

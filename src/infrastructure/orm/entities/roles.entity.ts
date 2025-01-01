@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  DeleteDateColumn,
+} from 'typeorm';
 import { Users } from './users.entity';
 
 /**
@@ -20,6 +26,10 @@ export class Roles {
 
   @Column({ name: 'updated_at' })
   updatedAt: Date;
+
+  @Column({ name: 'deleted_at' })
+  @DeleteDateColumn({ nullable: true })
+  deletedAt: Date | null;
 
   @OneToMany(() => Users, (user) => user.role)
   users: Users[];

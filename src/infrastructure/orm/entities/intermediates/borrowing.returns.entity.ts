@@ -4,6 +4,7 @@ import {
   PrimaryGeneratedColumn,
   ManyToOne,
   JoinColumn,
+  DeleteDateColumn,
 } from 'typeorm';
 import { Borrowings } from '../borrowings.entity';
 import { Returns } from '../returns.entity';
@@ -39,5 +40,6 @@ export class BorrowingReturns {
   createdAt: Date;
 
   @Column({ name: 'updated_at' })
-  updatedAt: Date;
+  @DeleteDateColumn({ nullable: true })
+  updatedAt: Date | null;
 }
