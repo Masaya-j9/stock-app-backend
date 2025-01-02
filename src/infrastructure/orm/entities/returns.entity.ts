@@ -1,4 +1,10 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  OneToMany,
+  PrimaryGeneratedColumn,
+  DeleteDateColumn,
+} from 'typeorm';
 import { BorrowingReturns } from './intermediates/borrowing.returns.entity';
 import { ReturnStocks } from './intermediates/return.stocks.entity';
 
@@ -10,9 +16,6 @@ export class Returns {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'item_id' })
-  itemId: number;
-
   @Column({ name: 'quantity' })
   quantity: number;
 
@@ -22,8 +25,8 @@ export class Returns {
   @Column({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'deleted_at' })
-  deletedAt: Date;
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  deletedAt: Date | null;
 
   // 中間テーブルへのリレーション
   @OneToMany(

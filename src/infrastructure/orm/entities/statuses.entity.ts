@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  OneToMany,
+  DeleteDateColumn,
+} from 'typeorm';
 import { BorrowingReturns } from './intermediates/borrowing.returns.entity';
 /**
  * 貸出状況をラベルを管理するStatuesテーブルのエンティティ
@@ -20,6 +26,9 @@ export class Statuses {
 
   @Column({ name: 'updated_at' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  deletedAt: Date | null;
 
   @OneToMany(
     () => BorrowingReturns,

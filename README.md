@@ -73,16 +73,53 @@ chmod +x blue-print/shells/diagram.sh
 docker run --rm api npm install (ライブラリ名)
 ```
 
-## TypeORMについて
+## TypeORMを用いたマイグレーションについて
 
-### generate(Entityファイル作成の場合)
+※コンテナ上で実施したい場合、npmコマンドの前に随時`docker compose run`コマンドをつけること
+
+※データが消失するのでバックアップをとったり、seedでいつでもデータ作成できるようにしておくこと！
+
+1. 該当するエンティティファイルを編集して、マイグレーションファイルを作成する
 ```
- docker compose exec api npm run typeorm:migration:generate ./src/infrastructure/migrations/${作成されるファイル名}
+npm run typeorm:migration:generate -- ./src/infrastructure/migrations/${返変更する内容に関する内容でファイル名を作成する}
 ```
 
-### マイグレーション実行
+2. 一度、DB用のコンテナを停止する
 ```
-docker compose exec api npm run typeorm:migration:run
+docker compose down
+```
+
+3. 既存のvolumesにデータが残っている場合は削除する
+```
+docker volume ls
+```
+
+```
+docker volume rm ${volume名}
+```
+
+4. コンテナを再起動
+```
+docker compose build
+```
+
+```
+docker compose up db -d
+```
+
+5. ビルドして、初期化する
+```
+npm run build
+```
+
+6. マイグレーションコマンドでテーブルを構築する
+```
+npm run typeorm:migration:run
+```
+
+## Seedデータの作成
+```
+npm run typeorm:seed:run
 ```
 
 ## Description
