@@ -4,9 +4,10 @@ import {
   Column,
   ManyToOne,
   DeleteDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Borrowings } from '../borrowings.entity';
-import { Stocks } from '../stocks.entity';
+import { Comments } from '../comments.entity';
 
 /**
  * 貸出と貸出状況中のコメントを管理するBorrowingCommentsテーブルのエンティティ
@@ -18,13 +19,12 @@ export class BorrowingComments {
   id: number;
 
   @ManyToOne(() => Borrowings, (borrowing) => borrowing.borrowingComments)
+  @JoinColumn({ name: 'borrowing_id' })
   borrowing: Borrowings;
 
-  @ManyToOne(() => Stocks, (stock) => stock.borrowingComments)
-  stock: Stocks;
-
-  @Column()
-  comment: string;
+  @ManyToOne(() => Comments, (comment) => comment.borrowingComments)
+  @JoinColumn({ name: 'comment_id' })
+  comment: Comments;
 
   @Column({ name: 'created_at' })
   createdAt: Date;

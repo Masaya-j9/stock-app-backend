@@ -16,9 +16,6 @@ export class Returns {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ name: 'item_id' })
-  itemId: number;
-
   @Column({ name: 'quantity' })
   quantity: number;
 
