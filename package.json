@@ -19,7 +19,7 @@
         "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
         "test:e2e": "jest --config ./test/jest-e2e.json",
         "typeorm": "typeorm-ts-node-commonjs",
-        "typeorm:migration:create": "typeorm-ts-node-commonjs migration:create ./src/infrastructure/migrations/InitialMigration",
+        "typeorm:migration:create": "typeorm-ts-node-commonjs migration:create",
         "typeorm:migration:generate": "typeorm-ts-node-commonjs migration:generate -d ./src/infrastructure/orm/orm.config.ts",
         "typeorm:migration:run": "typeorm-ts-node-commonjs migration:run -d ./src/infrastructure/orm/orm.config.ts",
         "typeorm:migration:revert": "typeorm-ts-node-commonjs migration:revert -d ./src/infrastructure/orm/orm.config.ts",
@@ -27,7 +27,7 @@
         "typeorm:schema:drop": "typeorm-ts-node-commonjs schema:drop -d ./src/infrastructure/orm/orm.config.ts",
         "typeorm:entity:create": "typeorm-ts-node-commonjs entity:create -n",
         "typeorm:subscriber:create": "typeorm-ts-node-commonjs subscriber:create -n",
-        "typeorm:seed:run": "typeorm-ts-node-commonjs seed:run",
+        "typeorm:seed:run": "ts-node src/infrastructure/orm/seeds/seed.ts",
         "typeorm:seed:create": "typeorm-ts-node-commonjs seed:create -n"
     },
     "dependencies": {
@@ -45,7 +45,8 @@
         "reflect-metadata": "^0.2.0",
         "rxjs": "^7.8.1",
         "swagger-ui-express": "^5.0.1",
-        "typeorm": "^0.3.20"
+        "typeorm": "^0.3.20",
+        "typeorm-naming-strategies": "^4.1.0"
     },
     "devDependencies": {
         "@faker-js/faker": "^9.3.0",
