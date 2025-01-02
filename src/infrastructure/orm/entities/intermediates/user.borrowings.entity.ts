@@ -29,7 +29,6 @@ export class UserBorrowings {
   @Column({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'deleted_at' })
-  @DeleteDateColumn({ nullable: true })
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 }

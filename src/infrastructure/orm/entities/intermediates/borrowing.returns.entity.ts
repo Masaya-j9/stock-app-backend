@@ -30,16 +30,12 @@ export class BorrowingReturns {
   @JoinColumn({ name: 'status_id' })
   statuses: Statuses;
 
-  @Column({ name: 'borrowed_at' })
-  borrowedAt: Date;
-
-  @Column({ name: 'returned_at' })
-  returnedAt: Date;
-
   @Column({ name: 'created_at' })
   createdAt: Date;
 
   @Column({ name: 'updated_at' })
-  @DeleteDateColumn({ nullable: true })
-  updatedAt: Date | null;
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
+  deletedAt: Date;
 }

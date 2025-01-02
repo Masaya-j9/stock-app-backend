@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  DeleteDateColumn,
 } from 'typeorm';
 import { UserBorrowings } from './intermediates/user.borrowings.entity';
 import { BorrowingStocks } from './intermediates/borrowing.stocks.entity';
@@ -31,7 +32,7 @@ export class Borrowings {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'deleted_at' })
+  @DeleteDateColumn({ name: 'deleted_at', nullable: true })
   deletedAt: Date | null;
 
   // 中間テーブルへのリレーション
