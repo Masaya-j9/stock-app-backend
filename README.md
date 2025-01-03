@@ -36,7 +36,7 @@ http://localhost:4000/swagger
 ### ドメインモデルについて
 ![ドメインモデル図について](assets/domain-model.png)
 ### データベース設計について
-![ER図について](assets/relations/20241228185419-relations.png)
+![ER図について](assets/relations/20250103163134-relations.png)
 
 
 ## READMEの更新
