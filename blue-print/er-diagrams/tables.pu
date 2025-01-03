@@ -20,6 +20,7 @@ entity "Roles" as roles {
   description: string,
   created_at: datetime,
   updated_at: datetime,
+  deleted_at: datetime,
 }
 
 ' マイページ画面で利用
@@ -49,7 +50,6 @@ entity "Items" as items {
   --
   name: string,
   quantity: integer,
-  category_id: integer <<FK>>,
   description: string,
   created_at: datetime,
   updated_at: datetime,
@@ -90,7 +90,6 @@ entity "StockHistories" as stock_histories {
 entity "Borrowings" as borrowings {
   *id: integer <<PK>>,
   --
-  stock_id: integer <<FK>>,
   quantity: integer,
   created_at: datetime,
   updated_at: datetime,
@@ -100,7 +99,6 @@ entity "Borrowings" as borrowings {
 entity "Returns" as returns {
   *id: integer <<PK>>,
   --
-  stock_id: integer <<FK>>,
   quantity: integer,
   created_at: datetime,
   updated_at: datetime,
@@ -111,6 +109,7 @@ entity "Statuses" as statuses {
   *id: integer <<PK>>,
   --
   name: string,
+  description: string,
   created_at: datetime,
   updated_at: datetime,
   deleted_at: datetime,
