@@ -31,6 +31,7 @@ export const ormConfig: DataSourceOptions = {
     connectionLimit: 10,
     allowPublicKeyRetrieval: true,
   },
+  logging: true,
 };
 
 export const AppDataSource = new DataSource(ormConfig);
