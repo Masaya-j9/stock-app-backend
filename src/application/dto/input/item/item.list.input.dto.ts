@@ -1,14 +1,14 @@
 import { InputDto } from '../input.dto';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional } from 'class-validator';
+import { IsOptional, Min, Max } from 'class-validator';
 import { Expose, Transform } from 'class-transformer';
 
 /*
  * 物品一覧を取得する際のリクエスト情報を表すDTO
  */
-
-// const SORT_ORDER_MIN: number = 0;
-// const SORT_ORDER_MAX: number = 1;
+const PAGE_MIN: number = 1;
+const SORT_ORDER_MIN: number = 0;
+const SORT_ORDER_MAX: number = 1;
 
 export class ItemListInputDto implements InputDto {
   @ApiProperty({
@@ -19,6 +19,7 @@ export class ItemListInputDto implements InputDto {
     type: Number,
   })
   @IsOptional()
+  @Min(PAGE_MIN)
   @Expose({ name: 'pages' })
   pages?: number;
 
@@ -32,6 +33,8 @@ export class ItemListInputDto implements InputDto {
     type: Number,
   })
   @IsOptional()
+  @Min(SORT_ORDER_MIN)
+  @Max(SORT_ORDER_MAX)
   @Transform(({ value }) => Number(value))
   @Expose({ name: 'sort_order' })
   sortOrder?: number;
