@@ -1,6 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { ItemListServiceInterface } from './item.list.interface';
-import { map, Observable, switchMap, of, forkJoin } from 'rxjs';
+import { map, Observable, switchMap, of, forkJoin, throwError } from 'rxjs';
 import { ItemListInputDto } from '../../dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../dto/output/item/item.list.output.dto';
 import { ItemListDatasource } from '../../../infrastructure/datasources/items/item.list.datasource';
@@ -25,35 +25,29 @@ export class ItemListService implements ItemListServiceInterface {
   service(input: ItemListInputDto): Observable<ItemListOutputDto> {
     const pageNumber: number = input.pages;
     const sortOrderNumber: number = input.sortOrder;
-    console.log('Received input:', input);
-    console.log(
-      'Executing findItemList with pageNumber:',
-      pageNumber,
-      'sortOrderNumber:',
-      sortOrderNumber
-    );
     return this.itemListDatasource
       .findItemList(pageNumber, sortOrderNumber)
       .pipe(
         switchMap((items) => {
-          console.log('Items found:', items);
-          return forkJoin([
-            of(items),
-            this.itemListDatasource.getTotalCount(),
-            this.categoriesDatasource.findByCategories(
-              items.map((item) => item.id)
-            ),
-          ]).pipe(
-            map(([items, totalCount, categories]) => {
-              console.log('Total count:', totalCount);
-              console.log('Categories found:', categories);
-              const builder = new ItemListOutputBuilder();
-              builder.items = items;
-              builder.totalCount = totalCount.count;
-              builder.categories = categories;
-              return builder.build();
-            })
-          );
+          return items.length === 0
+            ? throwError(() => new NotFoundException('Items not found'))
+            : forkJoin([
+                of(items),
+                this.itemListDatasource.getTotalCount(),
+                this.categoriesDatasource.findByCategories(
+                  items.map((item) => item.id)
+                ),
+              ]).pipe(
+                map(([items, totalCount, categories]) => {
+                  console.log('Total count:', totalCount);
+                  console.log('Categories found:', categories);
+                  const builder = new ItemListOutputBuilder();
+                  builder.items = items;
+                  builder.totalCount = totalCount.count;
+                  builder.categories = categories;
+                  return builder.build();
+                })
+              );
         })
       );
   }
