@@ -1,5 +1,5 @@
 import { DomainPrimitive } from '../../domain.primitive';
-
+import { BadRequestException } from '@nestjs/common';
 /**
  * 一覧表示の際のページネーションを表す値オブジェクト
  * 10件ずつ表示する
@@ -9,8 +9,12 @@ export class Pagination implements DomainPrimitive<number, Pagination> {
   private readonly ITEM_PER_PAGE: number = 10;
   private _pageNumber: number;
 
-  constructor(pageNumber: number) {
-    this._pageNumber = pageNumber;
+  private constructor(pageNumber: number) {
+    typeof pageNumber === 'number' && pageNumber > 0
+      ? (this._pageNumber = pageNumber)
+      : (() => {
+          throw new BadRequestException('Invalid page number');
+        })();
   }
 
   /**

@@ -1,10 +1,19 @@
 import { DomainPrimitive } from '../../../domain.primitive';
-
+import { BadRequestException } from '@nestjs/common';
 export class SortOrder implements DomainPrimitive<number, SortOrder> {
   private _sortOrderNumber: number;
 
   private constructor(sortOrderNumber: number) {
-    this._sortOrderNumber = sortOrderNumber;
+    if (sortOrderNumber === undefined) {
+      this._sortOrderNumber = 0;
+    } else if (
+      typeof sortOrderNumber === 'number' &&
+      (sortOrderNumber === 0 || sortOrderNumber === 1)
+    ) {
+      this._sortOrderNumber = sortOrderNumber;
+    } else {
+      throw new BadRequestException('Invalid sort order');
+    }
   }
 
   /**
@@ -17,11 +26,13 @@ export class SortOrder implements DomainPrimitive<number, SortOrder> {
 
   /**
    * sortOrderNumberの値によって、クエリで使用するソート順を返すようにします
+   * sortOrderNumberが省略されている場合は、昇順とする
    * @returns ソートのクエリを返す(ASC or DESC)
    */
   toQuerySort(): 'ASC' | 'DESC' {
-    // 返り値をリテラル型にする
-    return this._sortOrderNumber === 0 ? 'ASC' : 'DESC';
+    return this._sortOrderNumber === 0 || this._sortOrderNumber === undefined
+      ? 'ASC'
+      : 'DESC';
   }
 
   /**
