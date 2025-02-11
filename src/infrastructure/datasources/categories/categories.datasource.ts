@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { Category } from '../../../domain/inventory/items/entities/category.entity';
+import { Categories } from '../../orm/entities/categories.entity';
 import { from, Observable } from 'rxjs';
 
 @Injectable()
@@ -14,10 +14,10 @@ export class CategoriesDatasource {
   /**
    * 登録されている物品のカテゴリー名を取得する
    * @param itemsIdsIds 物品IDの配列
-   * @returns {Observable<Category[]>} - カテゴリー名の配列
+   * @returns {Observable<Categories[]>} - カテゴリー名の配列
    */
 
-  findByCategories(itemIds: number[]): Observable<Category[]> {
+  findByCategories(itemIds: number[]): Observable<Categories[]> {
     console.log('itemIds:', itemIds);
     return from(
       this.dataSource

@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
-import { Item } from '../../../domain/inventory/items/entities/item.entity';
+import { Items } from '../../orm/entities/items.entity';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, map, Observable } from 'rxjs';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
@@ -18,7 +18,7 @@ export class ItemListDatasource {
    * @return {Observable<ItemListOutputDto>} - 登録されている物品の一覧情報
    *
    */
-  findItemList(page: number, sortOrderNumber: number): Observable<Item[]> {
+  findItemList(page: number, sortOrderNumber: number): Observable<Items[]> {
     const pagination = Pagination.of(page);
     const sortOrder = SortOrder.of(sortOrderNumber);
 
@@ -50,13 +50,14 @@ export class ItemListDatasource {
     );
   }
 
-  getTotalCount(): Observable<{ count: number }> {
+  getTotalCount(itemsIds: number[]): Observable<number> {
     return from(
       this.dataSource
         .createQueryBuilder()
         .select('COUNT(items.id)', 'count')
         .from('items', 'items')
+        .where('items.id IN (:...itemsIds)', { itemsIds })
         .getRawOne()
-    ).pipe(map((result) => ({ count: Number(result.count) })));
+    ).pipe(map((result) => Number(result.count)));
   }
 }
