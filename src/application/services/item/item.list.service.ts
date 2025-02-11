@@ -33,17 +33,17 @@ export class ItemListService implements ItemListServiceInterface {
             ? throwError(() => new NotFoundException('Items not found'))
             : forkJoin([
                 of(items),
-                this.itemListDatasource.getTotalCount(),
+                this.itemListDatasource.getTotalCount(
+                  items.map((item) => item.id)
+                ),
                 this.categoriesDatasource.findByCategories(
                   items.map((item) => item.id)
                 ),
               ]).pipe(
                 map(([items, totalCount, categories]) => {
-                  console.log('Total count:', totalCount);
-                  console.log('Categories found:', categories);
                   const builder = new ItemListOutputBuilder();
                   builder.items = items;
-                  builder.totalCount = totalCount.count;
+                  builder.totalCount = totalCount;
                   builder.categories = categories;
                   return builder.build();
                 })
