@@ -3,17 +3,13 @@ import { BadRequestException } from '@nestjs/common';
 export class SortOrder implements DomainPrimitive<number, SortOrder> {
   private _sortOrderNumber: number;
 
-  private constructor(sortOrderNumber: number) {
-    if (sortOrderNumber === undefined) {
-      this._sortOrderNumber = 0;
-    } else if (
-      typeof sortOrderNumber === 'number' &&
-      (sortOrderNumber === 0 || sortOrderNumber === 1)
-    ) {
-      this._sortOrderNumber = sortOrderNumber;
-    } else {
-      throw new BadRequestException('Invalid sort order');
-    }
+  private constructor(sortOrderNumber: number | undefined) {
+    const inputValue: number = sortOrderNumber ?? 0;
+    inputValue === 0 || inputValue === 1
+      ? (this._sortOrderNumber = inputValue)
+      : (() => {
+          throw new BadRequestException('Invalid sort order');
+        })();
   }
 
   /**
