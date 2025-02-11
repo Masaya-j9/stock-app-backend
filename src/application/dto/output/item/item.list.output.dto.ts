@@ -23,6 +23,46 @@ export class itemCategories {
   })
   @Expose({ name: 'name' })
   name: string;
+
+  @ApiProperty({
+    example: 1,
+    description: `
+    物品ID
+    `,
+    type: Number,
+  })
+  @Expose({ name: 'item_id' })
+  itemId: number;
+
+  @ApiProperty({
+    example: 'このカテゴリーはテスト用です。',
+    description: `
+    カテゴリーの詳細
+    `,
+    type: String,
+  })
+  @Expose({ name: 'description' })
+  description: string;
+
+  @ApiProperty({
+    example: '2021-01-01T00:00:00.000Z',
+    description: `
+    作成日時
+    `,
+    type: String,
+  })
+  @Expose({ name: 'created_at' })
+  createdAt: Date;
+
+  @ApiProperty({
+    example: '2021-01-01T00:00:00.000Z',
+    description: `
+    更新日時
+    `,
+    type: String,
+  })
+  @Expose({ name: 'updated_at' })
+  updatedAt: Date;
 }
 
 export class ItemResults {
