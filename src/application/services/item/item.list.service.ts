@@ -11,8 +11,8 @@ import { ItemListOutputBuilder } from '../../dto/output/item/item.list.output.bu
 export class ItemListService implements ItemListServiceInterface {
   // 登録されている物品情報に関するコンストラクタ
   constructor(
-    private readonly itemListDatasource: ItemListDatasource,
-    private readonly categoriesDatasource: CategoriesDatasource
+    public readonly itemListDatasource: ItemListDatasource,
+    public readonly categoriesDatasource: CategoriesDatasource
   ) {}
 
   /**
