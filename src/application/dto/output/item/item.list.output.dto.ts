@@ -129,6 +129,46 @@ export class ItemListOutputDto implements OutputDto {
   count: number;
 
   @Type(() => ItemResults)
+  @ApiProperty({
+    example: [
+      {
+        id: 1,
+        name: 'テスト物品',
+        quantity: 1,
+        description: 'この物品はテスト用です。',
+        itemsCategories: [
+          {
+            id: 1,
+            name: 'テストカテゴリー',
+            itemId: 1,
+            description: 'このカテゴリーはテスト用です。',
+            createdAt: '2021-01-01T00:00:00.000Z',
+            updatedAt: '2021-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+      {
+        id: 2,
+        name: 'テスト物品2',
+        quantity: 2,
+        description: 'この物品はテスト用です。',
+        itemsCategories: [
+          {
+            id: 2,
+            name: 'テストカテゴリー2',
+            itemId: 2,
+            description: 'このカテゴリーはテスト用です。',
+            createdAt: '2021-01-01T00:00:00.000Z',
+            updatedAt: '2021-01-01T00:00:00.000Z',
+          },
+        ],
+      },
+    ],
+    description: `
+    物品一覧
+    `,
+    type: [ItemResults],
+  })
   @Expose({ name: 'results' })
   results: ItemResults[];
 }

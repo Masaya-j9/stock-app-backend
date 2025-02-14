@@ -14,7 +14,8 @@ export class ItemListInputDto implements InputDto {
   @ApiProperty({
     example: 1,
     description: `
-    ページ番号
+    ページ番号(1以上の整数とする)
+    1ページあたりの取得件数は10件とする
     `,
     type: Number,
   })
