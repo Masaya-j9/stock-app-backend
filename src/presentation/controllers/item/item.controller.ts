@@ -2,8 +2,8 @@ import { Controller, Get, Inject, Query } from '@nestjs/common';
 import { ItemListServiceInterface } from 'src/application/services/item/item.list.interface';
 import { Observable } from 'rxjs';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ItemListInputDto } from 'src/application/dto/input/item/item.list.input.dto';
-import { ItemListOutputDto } from 'src/application/dto/output/item/item.list.output.dto';
+import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
+import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 
 @ApiTags('stock-app')
 @Controller()
@@ -31,9 +31,6 @@ export class ItemListController {
   findItemList(
     @Query() query: ItemListInputDto
   ): Observable<ItemListOutputDto> {
-    console.log('Received query params:', query); // 追加
-    console.log('query.pages:', query.pages); // 追加
-    console.log('query.sortOrder:', query.sortOrder); // 追加
     return this.ItemListService.service(query);
   }
 }
