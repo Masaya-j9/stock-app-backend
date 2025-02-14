@@ -23,7 +23,7 @@ export class CategoriesDatasource {
       this.dataSource
         .createQueryBuilder()
         .select([
-          'categories.id As id',
+          'categories.id AS id',
           'categories.name AS name',
           'itemCategories.item_id AS itemId',
           'categories.createdAt AS createdAt',
