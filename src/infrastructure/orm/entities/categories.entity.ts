@@ -33,4 +33,7 @@ export class Categories {
 
   @OneToMany(() => ItemCategories, (itemCategories) => itemCategories.category)
   itemCategories: ItemCategories[];
+
+  @Column({ name: 'item_id' })
+  itemId: number;
 }

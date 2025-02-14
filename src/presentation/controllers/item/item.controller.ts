@@ -1,11 +1,11 @@
-import { Controller, Get, Inject } from '@nestjs/common';
+import { Controller, Get, Inject, Query } from '@nestjs/common';
 import { ItemListServiceInterface } from 'src/application/services/item/item.list.interface';
 import { Observable } from 'rxjs';
-import { ApiBody, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { ItemListInputDto } from 'src/application/dto/input/item/item.list.input.dto';
-import { ItemListOutputDto } from 'src/application/dto/output/item/item.list.output.dto';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
+import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 
-@ApiTags('stock-app')
+@ApiTags('items')
 @Controller()
 export class ItemListController {
   constructor(
@@ -20,18 +20,17 @@ export class ItemListController {
 
   @ApiOperation({
     summary: '登録されている物品一覧を返すエンドポイント',
-    description: '10件ずつ登録されいている物品情報を返すAPI',
+    description: '10件ずつ登録されている物品情報を返すAPI',
   })
   @ApiResponse({
     status: 200,
     description: 'OK',
     type: ItemListOutputDto,
   })
-  @Get('/items')
-  @ApiBody({
-    type: ItemListInputDto,
-  })
-  findItemList(): Observable<ItemListOutputDto> {
-    return this.ItemListService.service(ItemListInputDto);
+  @Get('/items/')
+  findItemList(
+    @Query() query: ItemListInputDto
+  ): Observable<ItemListOutputDto> {
+    return this.ItemListService.service(query);
   }
 }

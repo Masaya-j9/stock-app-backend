@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { ormConfig } from './infrastructure/orm/orm.config';
 import { HealthModule } from './presentation/modules/health.module';
 import { UserModule } from './presentation/modules/user.module';
+import { ItemsModule } from './presentation/modules/items.module';
 import { LoggerInterceptor } from './common/utils/logger.inspector';
 import { DatabaseModule } from './presentation/modules/database.module';
 
@@ -14,6 +15,7 @@ import { DatabaseModule } from './presentation/modules/database.module';
     TypeOrmModule.forRoot(ormConfig),
     HealthModule,
     UserModule,
+    ItemsModule,
     DatabaseModule,
   ],
   controllers: [AppController],
