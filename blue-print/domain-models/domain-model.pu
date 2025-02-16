@@ -37,12 +37,17 @@ class Item {
   - name: String
   - quantity: Integer
   + checkAvailability(): Boolean
-  + registerItem()
+  + addItem(name: String, quantity: Integer, category: Category)
+  + editItem(newName: String, newQuantity: Integer, newCategory: Category)
+  + removeItem()
 }
 
 class Category {
   - categoryId: ID
   - name: String
+  + addCategory()
+  + editCategory(newName: String)
+  + deleteCategory()
 }
 
 class Stock {

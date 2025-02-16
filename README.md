@@ -34,7 +34,7 @@ http://localhost:4000/swagger
 ### ユースケースについて
 ![ユースケース図について](assets/usecase-diagram.png)
 ### ドメインモデルについて
-![ドメインモデル図について](assets/domain-model.png)
+![ドメインモデル図について](assets/domain-models/20250216145938-domain-model.png)
 ### データベース設計について
 ![ER図について](assets/relations/20250103163134-relations.png)
 
@@ -48,6 +48,16 @@ http://localhost:4000/swagger
 chmod +x blue-print/shells/diagram.sh
 
 ./blue-print/shells/diagram.sh
+```
+
+### ドメインモデル図
+1. 下記のコマンドでドメインモデル図の新規画像を作成する
+2. README.mdのパスを張り替える
+
+```
+chmod +x blue-print/shells/doomain-model.sh
+
+./blue-print/shells/doomain-model.sh
 ```
 
 
