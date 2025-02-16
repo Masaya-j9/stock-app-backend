@@ -41,10 +41,11 @@ export class ItemListService implements ItemListServiceInterface {
                 ),
               ]).pipe(
                 map(([items, totalCount, categories]) => {
-                  const builder = new ItemListOutputBuilder();
-                  builder.items = items;
-                  builder.totalCount = totalCount;
-                  builder.categories = categories;
+                  const builder = new ItemListOutputBuilder(
+                    items,
+                    totalCount,
+                    categories
+                  );
                   return builder.build();
                 })
               );
