@@ -1,28 +1,28 @@
 export class Category {
   private readonly _id: number;
-  private _name: string;
+  private readonly _name: string;
   private readonly _description: string;
-  private readonly _itemId: number;
   private readonly _createdAt: Date;
   private readonly _updatedAt: Date;
   private readonly _deletedAt: Date | null;
+  private readonly _itemIds: number[];
 
   constructor(
     id: number,
     name: string,
     description: string,
-    itemId: number,
     createdAt: Date,
     updatedAt: Date,
-    deletedAt: Date | null
+    deletedAt: Date | null,
+    itemIds: number[]
   ) {
     this._id = id;
     this._name = name;
     this._description = description;
-    this._itemId = itemId;
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
     this._deletedAt = deletedAt;
+    this._itemIds = itemIds;
   }
 
   get id(): number {
@@ -37,10 +37,6 @@ export class Category {
     return this._description;
   }
 
-  get itemId(): number {
-    return this._itemId;
-  }
-
   get createdAt(): Date {
     return this._createdAt;
   }
@@ -51,5 +47,9 @@ export class Category {
 
   get deletedAt(): Date | null {
     return this._deletedAt;
+  }
+
+  get itemIds(): number[] {
+    return this._itemIds;
   }
 }
