@@ -1,14 +1,12 @@
-import { Category } from './category.entity';
-
 export class Item {
   private readonly _id: number;
-  private _name: string;
-  private _quantity: number;
+  private readonly _name: string;
+  private readonly _quantity: number;
   private readonly _description: string;
   private readonly _createdAt: Date;
   private readonly _updatedAt: Date;
   private readonly _deletedAt: Date | null;
-  private readonly _categories: Category[];
+  private readonly _categoryIds: number[];
 
   constructor(
     id: number,
@@ -18,7 +16,7 @@ export class Item {
     createdAt: Date,
     updatedAt: Date,
     deletedAt: Date | null,
-    categories: Category[]
+    categoryIds: number[]
   ) {
     this._id = id;
     this._name = name;
@@ -27,7 +25,7 @@ export class Item {
     this._createdAt = createdAt;
     this._updatedAt = updatedAt;
     this._deletedAt = deletedAt;
-    this._categories = categories;
+    this._categoryIds = categoryIds;
   }
 
   get id(): number {
@@ -46,7 +44,7 @@ export class Item {
     return this._description;
   }
 
-  get categories(): Category[] {
-    return this._categories;
+  get categoryIds(): number[] {
+    return this._categoryIds;
   }
 }
