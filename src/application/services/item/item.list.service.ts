@@ -39,12 +39,16 @@ export class ItemListService implements ItemListServiceInterface {
                 this.categoriesDatasource.findByCategories(
                   items.map((item) => item.id)
                 ),
+                this.categoriesDatasource.findCategoryIdsAndItemIds(
+                  items.map((item) => item.id)
+                ),
               ]).pipe(
-                map(([items, totalCount, categories]) => {
+                map(([items, totalCount, categories, itemIdAndCategoryIds]) => {
                   const builder = new ItemListOutputBuilder(
                     items,
                     totalCount,
-                    categories
+                    categories,
+                    itemIdAndCategoryIds
                   );
                   return builder.build();
                 })
