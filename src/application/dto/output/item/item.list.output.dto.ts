@@ -25,16 +25,6 @@ export class itemCategories {
   name: string;
 
   @ApiProperty({
-    example: 1,
-    description: `
-    物品ID
-    `,
-    type: Number,
-  })
-  @Expose({ name: 'item_id' })
-  itemId: number;
-
-  @ApiProperty({
     example: 'このカテゴリーはテスト用です。',
     description: `
     カテゴリーの詳細
