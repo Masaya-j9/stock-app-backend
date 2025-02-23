@@ -2,7 +2,7 @@ import { OutputBuilder } from '../../output/output.builder';
 import { ItemListOutputDto } from './item.list.output.dto';
 import { Items } from '../../../../infrastructure/orm/entities/items.entity';
 import { Categories } from '../../../../infrastructure/orm/entities/categories.entity';
-import { ItemCategories } from '../../../../infrastructure/orm/entities/intermediates/item.categories.entity';
+import { ItemAndCategoryType } from '../../../../infrastructure/types/item.and.category.type';
 import { Item } from '../../../../domain/inventory/items/entities/item.entity';
 import { Category } from '../../../../domain/inventory/items/entities/category.entity';
 import { NotFoundException } from '@nestjs/common';
@@ -11,72 +11,59 @@ export class ItemListOutputBuilder implements OutputBuilder<ItemListOutputDto> {
   private _totalCount: number;
   private _items: Item[];
   private _categories: Category[];
+  private _itemIdsAndCategoryIds: ItemAndCategoryType[];
 
-  constructor(items?: Items[], totalCount?: number, categories?: Category[]) {
+  constructor(
+    items?: Items[],
+    totalCount?: number,
+    categories?: Categories[],
+    itemIdsAndCategoryIds?: ItemAndCategoryType[]
+  ) {
     this._totalCount = totalCount ?? 0;
-    this._items = items ? this.mapItems(items) : [];
-    this._categories = categories ?? [];
-  }
-
-  set totalCount(total_count: number) {
-    this._totalCount = total_count;
-  }
-
-  set items(items: Items[]) {
-    this._items = this.mapItems(items);
-  }
-
-  set categories(categories: Categories[]) {
-    this._categories = this.mapCategories(categories);
-  }
-
-  private mapCategories(categories: Categories[]): Category[] {
-    return categories.map(
-      (category) =>
-        new Category(
-          category.id,
-          category.name,
-          category.description,
-          category.itemId,
-          category.createdAt,
-          category.updatedAt,
-          category.deletedAt
-        )
-    );
-  }
-
-  private mapItemCategories(itemCategories: ItemCategories[]): Category[] {
-    return itemCategories
-      ? itemCategories.map(
-          (itemCategory) =>
-            new Category(
-              itemCategory.category.id,
-              itemCategory.category.name,
-              itemCategory.category.description,
-              itemCategory.category.itemId,
-              itemCategory.category.createdAt,
-              itemCategory.category.updatedAt,
-              itemCategory.category.deletedAt
-            )
-        )
+    this._itemIdsAndCategoryIds = itemIdsAndCategoryIds ?? [];
+    this._items = items
+      ? this.mapItems(items, this._itemIdsAndCategoryIds)
       : [];
+    this._categories = categories ? this.mapCategories(categories) : [];
   }
 
-  private mapItems(items: Items[]): Item[] {
-    return items.map(
-      (item) =>
-        new Item(
-          item.id,
-          item.name,
-          item.quantity,
-          item.description,
-          item.createdAt,
-          item.updatedAt,
-          item.deletedAt,
-          this.mapItemCategories(item.itemCategories || [])
-        )
-    );
+  // CategoriesをCategoryドメインエンティティにマッピング
+  private mapCategories(categories: Categories[]): Category[] {
+    return categories.map((category) => {
+      return new Category(
+        category.id,
+        category.name,
+        category.description,
+        category.createdAt,
+        category.updatedAt,
+        category.deletedAt
+      );
+    });
   }
+
+  // ItemsをItemドメインエンティティにマッピング
+  private mapItems(
+    items: Items[],
+    itemIdsAndCategoryIds: ItemAndCategoryType[]
+  ): Item[] {
+    return items.map((item) => {
+      const categoryIds = itemIdsAndCategoryIds
+        .filter((itemCategory) => itemCategory.itemId === item.id)
+        .map((itemCategory) => itemCategory.categoryId); // 修正：categoryIdを抽出
+
+      return new Item(
+        item.id,
+        item.name,
+        item.quantity,
+        item.description,
+        item.createdAt,
+        item.updatedAt,
+        item.deletedAt,
+        categoryIds // 修正：取得したcategoryIdsをItemに渡す
+      );
+    });
+  }
+
   build(): ItemListOutputDto {
     return this._totalCount === 0
       ? (() => {
@@ -90,18 +77,22 @@ export class ItemListOutputBuilder implements OutputBuilder<ItemListOutputDto> {
             name: item.name,
             quantity: item.quantity,
             description: item.description,
-            itemsCategories: this._categories
-              .filter((category) => category.itemId == item.id)
-              .map(
-                ({ id, name, itemId, description, createdAt, updatedAt }) => ({
-                  id,
-                  name,
-                  itemId,
-                  description,
-                  createdAt,
-                  updatedAt,
-                })
-              ),
+            itemsCategories: item.categoryIds
+              .map((categoryId) => {
+                const category = this._categories.find(
+                  (cat) => cat.id === categoryId
+                );
+                return category
+                  ? {
+                      id: category.id,
+                      name: category.name,
+                      description: category.description,
+                      createdAt: category.createdAt,
+                      updatedAt: category.updatedAt,
+                    }
+                  : null;
+              })
+              .filter(Boolean),
           }));
           return output;
         })();
