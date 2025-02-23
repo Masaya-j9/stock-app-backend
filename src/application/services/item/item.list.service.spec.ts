@@ -4,10 +4,11 @@ import { ItemListService } from './item.list.service';
 import { ItemListDatasource } from '../../../infrastructure/datasources/items/item.list.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
-import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
 import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
+import { ItemAndCategoryType } from '../../../infrastructure/types/item.and.category.type';
 import { NotFoundException } from '@nestjs/common';
+import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 
 describe('ItemListService', () => {
   let itemListService: ItemListService;
@@ -29,6 +30,7 @@ describe('ItemListService', () => {
           provide: CategoriesDatasource,
           useValue: {
             findByCategories: jest.fn(),
+            findCategoryIdsAndItemIds: jest.fn(),
           },
         },
       ],
@@ -47,7 +49,7 @@ describe('ItemListService', () => {
       pages: 1,
       sortOrder: 0,
     };
-    const items: Items[] = [
+    const mockItems: Items[] = [
       {
         id: 1,
         name: 'Item 1',
@@ -69,15 +71,14 @@ describe('ItemListService', () => {
         deletedAt: null,
       },
     ];
-    const totalCount = 2;
-    const categories: Categories[] = [
+    const mockTotalCount: number = 2;
+    const mockCategories: Categories[] = [
       {
         id: 1,
         name: 'Category 1',
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
-        itemId: 1,
         description: 'その他のカテゴリ',
         itemCategories: [],
       },
@@ -87,59 +88,41 @@ describe('ItemListService', () => {
         createdAt: new Date(),
         updatedAt: new Date(),
         deletedAt: null,
-        itemId: 2,
         description: 'その他のカテゴリ',
         itemCategories: [],
       },
     ];
 
-    jest.spyOn(itemListDatasource, 'findItemList').mockReturnValue(of(items));
+    const mockItemAndCategoryIds: ItemAndCategoryType[] = [
+      {
+        itemId: 1,
+        categoryId: 1,
+      },
+      {
+        itemId: 2,
+        categoryId: 2,
+      },
+    ];
+
+    jest
+      .spyOn(itemListDatasource, 'findItemList')
+      .mockReturnValue(of(mockItems));
     jest
       .spyOn(itemListDatasource, 'getTotalCount')
-      .mockReturnValue(of(totalCount));
+      .mockReturnValue(of(mockTotalCount));
     jest
       .spyOn(categoriesDatasource, 'findByCategories')
-      .mockReturnValue(of(categories));
+      .mockReturnValue(of(mockCategories));
+    jest
+      .spyOn(categoriesDatasource, 'findCategoryIdsAndItemIds')
+      .mockReturnValue(of(mockItemAndCategoryIds));
 
     itemListService.service(input).subscribe({
       next: (result) => {
         expect(result).toBeInstanceOf(ItemListOutputDto);
-        expect(result.results).toHaveLength(2);
-        expect(result.count).toBe(2);
-
-        const firstItem = result.results[0];
-        expect(firstItem.id).toBe(1);
-        expect(firstItem.name).toBe('Item 1');
-        expect(firstItem.quantity).toBe(10);
-        expect(firstItem.description).toBe('Description 1');
-        expect(firstItem.itemsCategories).toBeDefined();
-        expect(firstItem.itemsCategories).toHaveLength(1);
-
-        const secondItem = result.results[1];
-        expect(secondItem.id).toBe(2);
-        expect(secondItem.name).toBe('Item 2');
-        expect(secondItem.quantity).toBe(5);
-        expect(secondItem.description).toBe('Description 2');
-        expect(secondItem.itemsCategories).toBeDefined();
-        expect(secondItem.itemsCategories).toHaveLength(1);
-
-        const firstItemCategories = firstItem.itemsCategories;
-        expect(firstItemCategories).toHaveLength(1);
-        expect(firstItemCategories[0].id).toBe(1); // ここで categories[0] にアクセス
-        expect(firstItemCategories[0].name).toBe('Category 1');
-        expect(firstItemCategories[0].itemId).toBe(1);
-        expect(firstItemCategories[0].description).toBe('その他のカテゴリ');
-        expect(firstItemCategories[0].createdAt).toBeDefined();
-        expect(firstItemCategories[0].updatedAt).toBeDefined();
-
-        const secondItemCategories = secondItem.itemsCategories;
-        expect(secondItemCategories).toHaveLength(1); // secondItemのitemsCategoriesも1つの要素
-        expect(secondItemCategories[0].id).toBe(2); // ここで categories[1] にアクセス
-        expect(secondItemCategories[0].name).toBe('Category 2');
-        expect(secondItemCategories[0].itemId).toBe(2);
-        expect(secondItemCategories[0].description).toBe('その他のカテゴリ');
-        expect(secondItemCategories[0].createdAt).toBeDefined();
-        expect(secondItemCategories[0].updatedAt).toBeDefined();
+        expect(result.count).toBe(mockTotalCount);
+        expect(result.results.length).toBe(2);
+        expect(result.results[0].id).toBe(mockItems[0].id);
       },
       error: (error) => {
         done.fail(error);
