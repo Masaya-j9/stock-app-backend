@@ -3,6 +3,7 @@ import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Categories } from '../../orm/entities/categories.entity';
 import { from, Observable } from 'rxjs';
+import { ItemAndCategoryType } from '../../types/item.and.category.type';
 
 @Injectable()
 export class CategoriesDatasource {
@@ -18,7 +19,6 @@ export class CategoriesDatasource {
    */
 
   findByCategories(itemIds: number[]): Observable<Categories[]> {
-    console.log('itemIds:', itemIds);
     return from(
       this.dataSource
         .createQueryBuilder()
@@ -34,6 +34,24 @@ export class CategoriesDatasource {
         .innerJoin('itemCategories.item', 'items')
         .where('items.id IN (:...itemIds)', { itemIds })
         .andWhere('categories.deletedAt IS NULL')
+        .getRawMany()
+    );
+  }
+
+  findCategoryIdsAndItemIds(
+    itemIds: number[]
+  ): Observable<ItemAndCategoryType[]> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select([
+          'item_categories.item_id AS itemId',
+          'item_categories.category_id AS categoryId',
+        ])
+        .from('item_categories', 'item_categories')
+        .where('item_categories.item_id IN (:...itemIds)', { itemIds })
+        .andWhere('item_categories.deleted_at IS NULL')
+        .orderBy('item_categories.item_id', 'ASC')
         .getRawMany()
     );
   }
