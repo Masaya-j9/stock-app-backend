@@ -4,6 +4,7 @@ import { DataSource } from 'typeorm';
 import { Categories } from '../../orm/entities/categories.entity';
 import { from, Observable } from 'rxjs';
 import { ItemAndCategoryType } from '../../types/item.and.category.type';
+import { Pagination } from '../../../domain/common/value-objects/pagination';
 
 @Injectable()
 export class CategoriesDatasource {
@@ -52,6 +53,27 @@ export class CategoriesDatasource {
         .where('item_categories.item_id IN (:...itemIds)', { itemIds })
         .andWhere('item_categories.deleted_at IS NULL')
         .orderBy('item_categories.item_id', 'ASC')
+        .getRawMany()
+    );
+  }
+
+  findCategoryList(pages: number): Observable<Categories[]> {
+    const pagination = Pagination.of(pages);
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select([
+          'categories.id AS id',
+          'categories.name AS name',
+          'categories.description AS description',
+          'categories.createdAt AS createdAt',
+          'categories.updatedAt AS updatedAt',
+        ])
+        .from('categories', 'categories')
+        .where('categories.deletedAt IS NULL')
+        .orderBy('categories.id', 'ASC')
+        .offset(pagination.offset())
+        .limit(pagination.itemsPerPage())
         .getRawMany()
     );
   }
