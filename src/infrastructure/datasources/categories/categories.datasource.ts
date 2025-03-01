@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Categories } from '../../orm/entities/categories.entity';
-import { from, Observable } from 'rxjs';
+import { from, map, Observable } from 'rxjs';
 import { ItemAndCategoryType } from '../../types/item.and.category.type';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 
@@ -75,6 +75,47 @@ export class CategoriesDatasource {
         .offset(pagination.offset())
         .limit(pagination.itemsPerPage())
         .getRawMany()
+    );
+  }
+
+  findCategoryByName(name: string): Observable<Categories | undefined> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select(['categories.name AS name'])
+        .from('categories', 'categories')
+        .where('categories.name = :name', { name })
+        .andWhere('categories.deletedAt IS NULL')
+        .getRawOne()
+    );
+  }
+
+  createCategory(
+    name: string,
+    description: string
+  ): Observable<{ id: number }> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .insert()
+        .into(Categories)
+        .values({
+          name,
+          description,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        })
+        .execute()
+    ).pipe(
+      map((result) => {
+        const id =
+          result.identifiers.length > 0 ? result.identifiers[0].id : null;
+        if (id === null) {
+          throw new Error('カテゴリーIDが取得できません');
+        }
+        return { id };
+      })
     );
   }
 }
