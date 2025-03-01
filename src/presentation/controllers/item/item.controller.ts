@@ -6,7 +6,7 @@ import { ItemListInputDto } from '../../../application/dto/input/item/item.list.
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 
 @ApiTags('items')
-@Controller()
+@Controller('items')
 export class ItemListController {
   constructor(
     @Inject('ItemListServiceInterface')
@@ -27,7 +27,7 @@ export class ItemListController {
     description: 'OK',
     type: ItemListOutputDto,
   })
-  @Get('/items/')
+  @Get()
   findItemList(
     @Query() query: ItemListInputDto
   ): Observable<ItemListOutputDto> {

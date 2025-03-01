@@ -6,7 +6,7 @@ import { CategoryListInputDto } from '../../../application/dto/input/category/ca
 import { CategoryListOutputDto } from '../../../application/dto/output/category/category.list.output.dto';
 
 @ApiTags('categories')
-@Controller()
+@Controller('categories')
 export class CategoryListController {
   constructor(
     @Inject('CategoryListServiceInterface')
@@ -17,7 +17,6 @@ export class CategoryListController {
    * @param request - リクエスト情報
    * @return {Observable<CategoryListOutputDto>} - 登録されているカテゴリーの一覧情報を含むObservable
    */
-  @Get('categories')
   @ApiOperation({
     summary: '登録されているカテゴリー一覧を返すエンドポイント',
     description: '10件ずつ登録されているカテゴリー情報を返すAPI',
@@ -27,6 +26,7 @@ export class CategoryListController {
     description: 'OK',
     type: CategoryListOutputDto,
   })
+  @Get()
   findCategoryList(
     @Query() query: CategoryListInputDto
   ): Observable<CategoryListOutputDto> {
