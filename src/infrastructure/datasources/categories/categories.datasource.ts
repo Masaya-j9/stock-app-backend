@@ -118,4 +118,67 @@ export class CategoriesDatasource {
       })
     );
   }
+
+  /**
+   * カテゴリーidが一致するカテゴリー情報を取得する
+   * 一致しない場合はundefinedを返す
+   * @param categoryId
+   * @returns {Observable<Categories[]>} - カテゴリー情報
+   */
+
+  findByCategoryId(categoryId: number): Observable<Categories | undefined> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select([
+          'categories.id AS id',
+          'categories.name AS name',
+          'categories.description AS description',
+          'categories.createdAt AS createdAt',
+          'categories.updatedAt AS updatedAt',
+          'categories.deletedAt AS deletedAt',
+        ])
+        .from('categories', 'categories')
+        .where('categories.id = :id', { id: categoryId })
+        .andWhere('categories.deletedAt IS NULL')
+        .getRawOne()
+    );
+  }
+
+  /**
+   * 入力値のカテゴリー情報を更新する
+   * @param id
+   * @param name
+   * @param description
+   * @returns なし
+   */
+
+  updateCategory(
+    id: number,
+    name: string,
+    description: string
+  ): Observable<void> {
+    // 更新するフィールドを直接セット
+    const updateFields: Partial<{
+      name: string;
+      description: string;
+      updatedAt: Date;
+    }> = {
+      name,
+      description,
+      updatedAt: new Date(), // 更新日時は必ずセット
+    };
+
+    // クエリを実行
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .update(Categories)
+        .set(updateFields) // 変更されたフィールドのみを更新
+        .where('id = :id', { id })
+        .execute()
+    ).pipe(
+      map(() => {}) // `UpdateResult` を無視して `void` を返す
+    );
+  }
 }

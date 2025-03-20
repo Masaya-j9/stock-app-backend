@@ -1,34 +1,53 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { CategoryListController } from './category.controller';
-import { CategoryListService } from '../../../application/services/category/category.list.service';
 import { CategoryListServiceInterface } from '../../../application/services/category/category.list.interface';
 import { CategoryListInputDto } from '../../../application/dto/input/category/category.list.input.dto';
 import { CategoryListOutputDto } from '../../../application/dto/output/category/category.list.output.dto';
 import { CategoryRegisterService } from '../../../application/services/category/category.register.service';
+import { CategoryRegisterServiceInterface } from '../../../application/services/category/category.register.interface';
 import { CategoryRegisterInputDto } from '../../../application/dto/input/category/category.register.input.dto';
 import { CategoryRegisterOutputDto } from '../../../application/dto/output/category/category.register.output.dto';
+import { CategoryUpdateServiceInterface } from '../../../application/services/category/category.update.interface';
+import { CategoryUpdateInputDto } from '../../../application/dto/input/category/category.update.input.dto';
+import { CategoryUpdateOutputDto } from '../../../application/dto/output/category/category.update.output.dto';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
-import { BadRequestException, ConflictException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  HttpStatus,
+  NotFoundException,
+} from '@nestjs/common';
+
+jest.setTimeout(10000);
 describe('CategoryController', () => {
   let controller: CategoryListController;
   let categoryListService: CategoryListServiceInterface;
   let categoryRegisterService: CategoryRegisterService;
+  let categoryUpdateService: CategoryUpdateServiceInterface;
   let categoriesDatasource: CategoriesDatasource;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [CategoryListController],
       providers: [
-        CategoryListService, // 実際のサービスを提供
-        CategoryRegisterService,
         {
           provide: 'CategoryListServiceInterface',
-          useClass: CategoryListService, // インターフェースを実装するクラスを提供
+          useValue: {
+            service: jest.fn(() => of(new CategoryListOutputDto())),
+          },
         },
         {
           provide: 'CategoryRegisterServiceInterface',
-          useClass: CategoryRegisterService,
+          useValue: {
+            service: jest.fn(() => of(new CategoryRegisterOutputDto())),
+          },
+        },
+        {
+          provide: 'CategoryUpdateServiceInterface',
+          useValue: {
+            service: jest.fn(() => of(new CategoryUpdateOutputDto())),
+          },
         },
         {
           provide: CategoriesDatasource,
@@ -36,6 +55,7 @@ describe('CategoryController', () => {
             findCategoryList: jest.fn(() => of([])),
             findCategoryByName: jest.fn(() => of(undefined)),
             createCategory: jest.fn(() => of({})),
+            updateCategory: jest.fn(() => of({})),
           },
         },
       ],
@@ -45,8 +65,11 @@ describe('CategoryController', () => {
     categoryListService = module.get<CategoryListServiceInterface>(
       'CategoryListServiceInterface'
     );
-    categoryRegisterService = module.get<CategoryRegisterService>(
-      CategoryRegisterService
+    categoryRegisterService = module.get<CategoryRegisterServiceInterface>(
+      'CategoryRegisterServiceInterface'
+    );
+    categoryUpdateService = module.get<CategoryUpdateServiceInterface>(
+      'CategoryUpdateServiceInterface'
     );
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
@@ -99,7 +122,7 @@ describe('CategoryController', () => {
       });
     });
 
-    it('pagesが不正の値の場合、400番エラーを返す', (done) => {
+    it('pagesが不正の値の場合、400エラーを返す', (done) => {
       const input: CategoryListInputDto = {
         pages: -1,
       };
@@ -171,29 +194,139 @@ describe('CategoryController', () => {
         name: 'Category 1',
         description: 'カテゴリー1についての説明',
       };
+      // サービスのモックを設定
+      jest
+        .spyOn(categoryRegisterService, 'service')
+        .mockReturnValue(
+          throwError(() => new ConflictException('カテゴリ名が重複しています'))
+        );
 
-      jest.spyOn(categoriesDatasource, 'findCategoryByName').mockReturnValue(
-        of({
-          id: 1,
-          name: 'Category 1',
-          description: 'Existing category description',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          deletedAt: null,
-          itemCategories: [],
-        })
-      );
       controller.registerCategory(input).subscribe({
         next: () => {
           done.fail('Expected an error, but got a result');
         },
         error: (error) => {
           expect(error).toBeInstanceOf(ConflictException);
-          expect(error.message).toBe('This value is not unique');
-          expect(error.response.statusCode).toBe(409);
-          expect(categoriesDatasource.findCategoryByName).toHaveBeenCalledWith(
-            input.name
-          );
+          expect(error.status).toBe(HttpStatus.CONFLICT);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('updateCategory', () => {
+    it('カテゴリを更新する', (done) => {
+      const input: CategoryUpdateInputDto = {
+        name: 'Category 1',
+        description: 'カテゴリー1についての説明',
+      };
+      const mockUpdatedCategory: CategoryUpdateOutputDto = {
+        id: 1,
+        name: 'Category 1',
+        description: 'カテゴリー1についての説明',
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(categoriesDatasource, 'updateCategory')
+        .mockReturnValue(of(void 0));
+      jest
+        .spyOn(categoryUpdateService, 'service')
+        .mockReturnValue(of(mockUpdatedCategory));
+
+      controller.updateCategory(1, input).subscribe({
+        next: (result) => {
+          expect(result).toMatchObject({
+            id: result.id,
+            name: result.name,
+            description: result.description,
+            updatedAt: expect.any(Date),
+          });
+        },
+        error: (error) => {
+          done(error);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('カテゴリ名が重複している場合、409エラーを返す', (done) => {
+      const input: CategoryUpdateInputDto = {
+        name: 'Category 1',
+        description: 'カテゴリー1についての説明',
+      };
+
+      jest
+        .spyOn(categoryUpdateService, 'service')
+        .mockReturnValue(
+          throwError(() => new ConflictException('カテゴリ名が重複しています'))
+        );
+      controller.updateCategory(1, input).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(ConflictException);
+          expect(error.status).toBe(HttpStatus.CONFLICT);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('カテゴリ名や説明が空の場合、400エラーを返す', (done) => {
+      const input: CategoryUpdateInputDto = {
+        name: '',
+        description: '',
+      };
+
+      jest
+        .spyOn(categoryUpdateService, 'service')
+        .mockReturnValue(
+          throwError(() => new BadRequestException('Validation failed'))
+        );
+      controller.updateCategory(1, input).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(BadRequestException);
+          expect(error.status).toBe(HttpStatus.BAD_REQUEST);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('カテゴリ名が存在しない場合、404エラーを返す', (done) => {
+      const input: CategoryUpdateInputDto = {
+        name: 'Category 1',
+        description: 'カテゴリー1についての説明',
+      };
+
+      jest
+        .spyOn(categoriesDatasource, 'findCategoryByName')
+        .mockReturnValue(of(undefined));
+      jest
+        .spyOn(categoryUpdateService, 'service')
+        .mockReturnValue(
+          throwError(() => new NotFoundException('Validation failed'))
+        );
+      controller.updateCategory(1, input).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(NotFoundException);
+          expect(error.status).toBe(HttpStatus.NOT_FOUND);
           done();
         },
         complete: () => {

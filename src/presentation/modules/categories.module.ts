@@ -3,6 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { CategoryListController } from '../controllers/category/category.controller';
 import { CategoryListService } from '../../application/services/category/category.list.service';
 import { CategoryRegisterService } from '../../application/services/category/category.register.service';
+import { CategoryUpdateService } from '../../application/services/category/category.update.service';
+import { CategoryDomainService } from '../../domain/inventory/items/services/category.domain.service';
 import { DatabaseModule } from './database.module';
 import { CategoriesDatasource } from '../../infrastructure/datasources/categories/categories.datasource';
 
@@ -19,11 +21,21 @@ import { CategoriesDatasource } from '../../infrastructure/datasources/categorie
       provide: 'CategoryRegisterServiceInterface',
       useClass: CategoryRegisterService,
     },
+    {
+      provide: 'CategoryUpdateServiceInterface',
+      useClass: CategoryUpdateService,
+    },
+    {
+      provide: CategoryDomainService,
+      useClass: CategoryDomainService,
+    },
   ],
   exports: [
     CategoriesDatasource,
     'CategoryListServiceInterface',
     'CategoryRegisterServiceInterface',
+    'CategoryUpdateServiceInterface',
+    CategoryDomainService,
   ],
 })
 export class CategoriesModule {}
