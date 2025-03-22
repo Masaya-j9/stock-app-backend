@@ -7,10 +7,12 @@ import {
   Patch,
   Post,
   Query,
+  Delete,
 } from '@nestjs/common';
 import { CategoryListServiceInterface } from '../../../application/services/category/category.list.interface';
 import { CategoryRegisterServiceInterface } from '../../../application/services/category/category.register.interface';
 import { CategoryUpdateServiceInterface } from '../../../application/services/category/category.update.interface';
+import { CategoryDeleteServiceInterface } from '../../../application/services/category/category.delete.interface';
 import { Observable } from 'rxjs';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoryListInputDto } from '../../../application/dto/input/category/category.list.input.dto';
@@ -19,6 +21,8 @@ import { CategoryRegisterInputDto } from '../../../application/dto/input/categor
 import { CategoryRegisterOutputDto } from '../../../application/dto/output/category/category.register.output.dto';
 import { CategoryUpdateInputDto } from '../../../application/dto/input/category/category.update.input.dto';
 import { CategoryUpdateOutputDto } from '../../../application/dto/output/category/category.update.output.dto';
+import { CategoryDeleteInputDto } from '../../../application/dto/input/category/category.delete.input.dto';
+import { CategoryDeleteOutputDto } from '../../../application/dto/output/category/category.delete.output.dto';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -29,7 +33,9 @@ export class CategoryListController {
     @Inject('CategoryRegisterServiceInterface')
     private readonly CategoryRegisterService: CategoryRegisterServiceInterface,
     @Inject('CategoryUpdateServiceInterface')
-    private readonly CategoryUpdateService: CategoryUpdateServiceInterface
+    private readonly CategoryUpdateService: CategoryUpdateServiceInterface,
+    @Inject('CategoryDeleteServiceInterface')
+    private readonly CategoryDeleteService: CategoryDeleteServiceInterface
   ) {}
 
   /**
@@ -91,5 +97,26 @@ export class CategoryListController {
     @Body() body: CategoryUpdateInputDto
   ): Observable<CategoryUpdateOutputDto> {
     return this.CategoryUpdateService.service(body, categoryId);
+  }
+
+  /**
+   * @param request - リクエスト情報
+   * @return {Observable<CategoryDeleteOutputDto>} - カテゴリ情報を含むObservable
+   */
+  @Delete(':category_id')
+  @ApiOperation({
+    summary: 'カテゴリ情報を1件削除するエンドポイント',
+    description: 'カテゴリ情報を1件削除するAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deleted',
+    type: CategoryDeleteOutputDto,
+  })
+  deleteCategory(
+    @Param('category_id') categoryId: number
+  ): Observable<CategoryDeleteOutputDto> {
+    const request: CategoryDeleteInputDto = { categoryId };
+    return this.CategoryDeleteService.service(request);
   }
 }
