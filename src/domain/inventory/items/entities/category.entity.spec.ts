@@ -106,4 +106,43 @@ describe('Category Entity', () => {
       expect(updatedCategory).toBeNull();
     });
   });
+
+  describe('isDeleted', () => {
+    it('deletedAtがnullの場合、falseを返す', () => {
+      expect(category.isDeleted()).toBe(false);
+    });
+
+    it('deletedAtがnullでない場合、trueを返す', () => {
+      const deletedCategory = new Category(
+        1,
+        'Category 1',
+        'Description',
+        new Date(),
+        new Date(),
+        new Date()
+      );
+      expect(deletedCategory.isDeleted()).toBe(true);
+    });
+  });
+
+  describe('delete', () => {
+    it('deletedAtがnullの場合、deletedAtに現在の日時を設定する', () => {
+      const deletedCategory = category.delete();
+      expect(deletedCategory.deletedAt).not.toBeNull();
+    });
+
+    it('deletedAtがnullでない場合、何もしない', () => {
+      const deletedCategory = new Category(
+        1,
+        'Category 1',
+        'Description',
+        new Date(),
+        new Date(),
+        new Date()
+      );
+      const originalDeletedAt = deletedCategory.deletedAt;
+      const updatedCategory = deletedCategory.delete();
+      expect(updatedCategory.deletedAt).toBe(originalDeletedAt);
+    });
+  });
 });

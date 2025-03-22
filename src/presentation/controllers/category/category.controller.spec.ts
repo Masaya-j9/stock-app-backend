@@ -10,22 +10,26 @@ import { CategoryRegisterOutputDto } from '../../../application/dto/output/categ
 import { CategoryUpdateServiceInterface } from '../../../application/services/category/category.update.interface';
 import { CategoryUpdateInputDto } from '../../../application/dto/input/category/category.update.input.dto';
 import { CategoryUpdateOutputDto } from '../../../application/dto/output/category/category.update.output.dto';
+import { CategoryDeleteServiceInterface } from '../../../application/services/category/category.delete.interface';
+import { CategoryDeleteInputDto } from '../../../application/dto/input/category/category.delete.input.dto';
+import { CategoryDeleteOutputDto } from '../../../application/dto/output/category/category.delete.output.dto';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
 import {
   BadRequestException,
   ConflictException,
   HttpStatus,
+  InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
 
-jest.setTimeout(10000);
 describe('CategoryController', () => {
   let controller: CategoryListController;
   let categoryListService: CategoryListServiceInterface;
   let categoryRegisterService: CategoryRegisterService;
   let categoryUpdateService: CategoryUpdateServiceInterface;
   let categoriesDatasource: CategoriesDatasource;
+  let categoryDeleteService: CategoryDeleteServiceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -50,12 +54,21 @@ describe('CategoryController', () => {
           },
         },
         {
+          provide: 'CategoryDeleteServiceInterface',
+          useValue: {
+            service: jest.fn(() => of(new CategoryDeleteOutputDto())),
+          },
+        },
+        {
           provide: CategoriesDatasource,
           useValue: {
             findCategoryList: jest.fn(() => of([])),
-            findCategoryByName: jest.fn(() => of(undefined)),
+            findByCategoryId: jest.fn(),
+            findCategoryByName: jest.fn(),
+            findCategoryById: jest.fn(() => of({})),
             createCategory: jest.fn(() => of({})),
             updateCategory: jest.fn(() => of({})),
+            deleteCategory: jest.fn(() => of({})),
           },
         },
       ],
@@ -73,6 +86,9 @@ describe('CategoryController', () => {
     );
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
+    categoryDeleteService = module.get<CategoryDeleteServiceInterface>(
+      'CategoryDeleteServiceInterface'
+    );
   });
 
   it('should be defined', () => {
@@ -327,6 +343,140 @@ describe('CategoryController', () => {
         error: (error) => {
           expect(error).toBeInstanceOf(NotFoundException);
           expect(error.status).toBe(HttpStatus.NOT_FOUND);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('deleteCategory', () => {
+    it('カテゴリを論理削除する', (done) => {
+      const mockCategory: CategoryDeleteInputDto = {
+        categoryId: 1,
+      };
+      jest
+        .spyOn(categoriesDatasource, 'deleteCategory')
+        .mockReturnValue(of(void 0));
+      jest.spyOn(categoryDeleteService, 'service').mockReturnValue(of(void 0));
+
+      controller.deleteCategory(mockCategory.categoryId).subscribe({
+        next: (result) => {
+          expect(result).toBe(void 0);
+        },
+        error: (error) => {
+          done(error);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('カテゴリが存在しない場合、404エラーを返す', (done) => {
+      const mockCategory: CategoryDeleteInputDto = {
+        categoryId: 1,
+      };
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoryId')
+        .mockReturnValue(of(undefined));
+      jest
+        .spyOn(categoryDeleteService, 'service')
+        .mockReturnValue(
+          throwError(() => new NotFoundException('Validation failed'))
+        );
+
+      controller.deleteCategory(mockCategory.categoryId).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(NotFoundException);
+          expect(error.status).toBe(HttpStatus.NOT_FOUND);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('カテゴリが外部のテーブルで利用されている場合、409エラーを返す', (done) => {
+      const mockInput: CategoryDeleteInputDto = {
+        categoryId: 1,
+      };
+
+      const mockCategory = {
+        id: 1,
+        name: 'Category 1',
+        description: 'カテゴリー1についての説明',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoryId')
+        .mockReturnValue(of(mockCategory));
+      jest
+        .spyOn(categoriesDatasource, 'deleteCategory')
+        .mockReturnValue(throwError(() => ({ code: 'ER_ROW_IS_REFERENCED' })));
+      jest
+        .spyOn(categoryDeleteService, 'service')
+        .mockReturnValue(
+          throwError(() => new ConflictException('Validation failed'))
+        );
+      controller.deleteCategory(mockInput.categoryId).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(ConflictException);
+          expect(error.status).toBe(HttpStatus.CONFLICT);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('トランザクション処理が失敗したとき、500エラーを返すこと', (done) => {
+      const mockInput: CategoryDeleteInputDto = {
+        categoryId: 1,
+      };
+
+      const mockCategory = {
+        id: 1,
+        name: 'Category 1',
+        description: 'カテゴリー1についての説明',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoryId')
+        .mockReturnValue(of(mockCategory));
+      jest
+        .spyOn(categoriesDatasource, 'deleteCategory')
+        .mockReturnValue(throwError(() => new Error('Transaction failed')));
+      jest
+        .spyOn(categoryDeleteService, 'service')
+        .mockReturnValue(
+          throwError(
+            () => new InternalServerErrorException('Transaction failed')
+          )
+        );
+      controller.deleteCategory(mockInput.categoryId).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(InternalServerErrorException);
+          expect(error.status).toBe(HttpStatus.INTERNAL_SERVER_ERROR);
           done();
         },
         complete: () => {
