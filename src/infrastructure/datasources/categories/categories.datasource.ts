@@ -181,4 +181,24 @@ export class CategoriesDatasource {
       map(() => {}) // `UpdateResult` を無視して `void` を返す
     );
   }
+
+  /**
+   * 入力idに該当するカテゴリー情報を論理削除する
+   * @param id
+   * @returns なし
+   */
+  deleteCategory(id: number): Observable<void> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .update(Categories)
+        .set({
+          updatedAt: new Date(),
+          deletedAt: new Date(),
+        })
+        .where('id = :id', { id })
+        .andWhere('deletedAt IS NULL')
+        .execute()
+    ).pipe(map(() => {}));
+  }
 }

@@ -4,6 +4,7 @@ import { CategoryListController } from '../controllers/category/category.control
 import { CategoryListService } from '../../application/services/category/category.list.service';
 import { CategoryRegisterService } from '../../application/services/category/category.register.service';
 import { CategoryUpdateService } from '../../application/services/category/category.update.service';
+import { CategoryDeleteService } from '../../application/services/category/category.delete.service';
 import { CategoryDomainService } from '../../domain/inventory/items/services/category.domain.service';
 import { DatabaseModule } from './database.module';
 import { CategoriesDatasource } from '../../infrastructure/datasources/categories/categories.datasource';
@@ -26,6 +27,10 @@ import { CategoriesDatasource } from '../../infrastructure/datasources/categorie
       useClass: CategoryUpdateService,
     },
     {
+      provide: 'CategoryDeleteServiceInterface',
+      useClass: CategoryDeleteService,
+    },
+    {
       provide: CategoryDomainService,
       useClass: CategoryDomainService,
     },
@@ -35,6 +40,7 @@ import { CategoriesDatasource } from '../../infrastructure/datasources/categorie
     'CategoryListServiceInterface',
     'CategoryRegisterServiceInterface',
     'CategoryUpdateServiceInterface',
+    'CategoryDeleteServiceInterface',
     CategoryDomainService,
   ],
 })

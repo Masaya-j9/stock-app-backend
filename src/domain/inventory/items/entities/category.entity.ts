@@ -47,6 +47,10 @@ export class Category {
     return this._deletedAt;
   }
 
+  isDeleted(): boolean {
+    return this._deletedAt !== null;
+  }
+
   validateUpdate(name?: string, description?: string): boolean {
     // 未定義の場合
     if (name === undefined || description === undefined) {
@@ -105,5 +109,18 @@ export class Category {
     }
 
     return null;
+  }
+
+  delete(): Category {
+    return this._deletedAt !== null
+      ? this
+      : new Category(
+          this._id,
+          this._name,
+          this._description,
+          this._createdAt,
+          new Date(),
+          new Date()
+        );
   }
 }
