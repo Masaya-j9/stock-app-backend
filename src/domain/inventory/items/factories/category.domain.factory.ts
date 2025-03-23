@@ -12,4 +12,8 @@ export class CategoryDomainFactory {
       categories.deletedAt
     );
   }
+
+  static fromInfrastructureList(categories: Categories[]): Category[] {
+    return categories.map((category) => this.fromInfrastructure(category));
+  }
 }
