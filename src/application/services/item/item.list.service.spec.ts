@@ -16,7 +16,7 @@ import { CategoryDomainFactory } from '../../../domain/inventory/items/factories
 
 describe('ItemListService', () => {
   let itemListService: ItemListService;
-  let ItemsDatasource: ItemsDatasource;
+  let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
 
   const mockItemDomainFactory = {
@@ -56,7 +56,7 @@ describe('ItemListService', () => {
     }).compile();
 
     itemListService = module.get<ItemListService>(ItemListService);
-    ItemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
+    itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
   });
@@ -151,9 +151,9 @@ describe('ItemListService', () => {
       },
     ];
 
-    jest.spyOn(ItemsDatasource, 'findItemList').mockReturnValue(of(mockItems));
+    jest.spyOn(itemsDatasource, 'findItemList').mockReturnValue(of(mockItems));
     jest
-      .spyOn(ItemsDatasource, 'getTotalCount')
+      .spyOn(itemsDatasource, 'getTotalCount')
       .mockReturnValue(of(mockTotalCount));
     jest
       .spyOn(categoriesDatasource, 'findByCategories')
@@ -195,8 +195,8 @@ describe('ItemListService', () => {
       pages: 1,
       sortOrder: 0,
     };
-    jest.spyOn(ItemsDatasource, 'findItemList').mockReturnValue(of([])); // 空の配列を返す
-    jest.spyOn(ItemsDatasource, 'getTotalCount').mockReturnValue(of(0)); // 合計数を0に設定
+    jest.spyOn(itemsDatasource, 'findItemList').mockReturnValue(of([])); // 空の配列を返す
+    jest.spyOn(itemsDatasource, 'getTotalCount').mockReturnValue(of(0)); // 合計数を0に設定
     itemListService.service(input).subscribe({
       next: () => {
         done.fail('エラーが発生しませんでした');
