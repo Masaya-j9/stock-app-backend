@@ -138,6 +138,32 @@ describe('CategoryController', () => {
       });
     });
 
+    it('ページ番号に該当するカテゴリ情報が見つからなかった場合、404エラーを返す', (done) => {
+      const input: CategoryListInputDto = {
+        pages: 1,
+      };
+      jest
+        .spyOn(categoryListService, 'service')
+        .mockReturnValue(
+          throwError(() => new NotFoundException('Category not found'))
+        );
+      controller.findCategoryList(input).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (error) => {
+          expect(error).toBeInstanceOf(NotFoundException);
+          expect(error.message).toBe('Category not found');
+          expect(error.response.statusCode).toBe(404);
+          expect(categoryListService.service).toHaveBeenCalledWith(input);
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
     it('pagesが不正の値の場合、400エラーを返す', (done) => {
       const input: CategoryListInputDto = {
         pages: -1,
