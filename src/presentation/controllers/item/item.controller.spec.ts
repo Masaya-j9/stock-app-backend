@@ -4,7 +4,7 @@ import { ItemListService } from '../../../application/services/item/item.list.se
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
-import { ItemListDatasource } from '../../../infrastructure/datasources/items/item.list.datasource';
+import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
 import { BadRequestException } from '@nestjs/common';
@@ -23,7 +23,7 @@ describe('ItemController', () => {
           useClass: ItemListService, // インターフェースを実装するクラスを提供
         },
         {
-          provide: ItemListDatasource,
+          provide: ItemsDatasource,
           useValue: {
             findItemList: jest.fn(() => of([])),
           },

@@ -7,7 +7,7 @@ import { from, map, Observable } from 'rxjs';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
 
 @Injectable()
-export class ItemListDatasource {
+export class ItemsDatasource {
   constructor(
     @InjectDataSource()
     private readonly dataSource: DataSource
