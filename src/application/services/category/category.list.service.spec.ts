@@ -5,10 +5,15 @@ import { CategoriesDatasource } from '../../../infrastructure/datasources/catego
 import { CategoryListInputDto } from '../../../application/dto/input/category/category.list.input.dto';
 import { CategoryListOutputDto } from '../../../application/dto/output/category/category.list.output.dto';
 import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
+import { Category } from '../../../domain/inventory/items/entities/category.entity';
+import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 
 describe('CategoryListService', () => {
   let categoryListService: CategoryListService;
   let categoriesDatasource: CategoriesDatasource;
+  const mockCategoryDomainFactory = {
+    fromInfrastructureList: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -20,6 +25,10 @@ describe('CategoryListService', () => {
             findCategoryList: jest.fn(),
             getTotalCount: jest.fn(),
           },
+        },
+        {
+          provide: CategoryDomainFactory,
+          useValue: mockCategoryDomainFactory,
         },
       ],
     }).compile();
@@ -43,7 +52,7 @@ describe('CategoryListService', () => {
         name: 'Category 1',
         createdAt: new Date(),
         updatedAt: new Date(),
-        description: '',
+        description: 'hoge',
         deletedAt: undefined,
         itemCategories: [],
       },
@@ -52,16 +61,23 @@ describe('CategoryListService', () => {
         name: 'Category 2',
         createdAt: new Date(),
         updatedAt: new Date(),
-        description: '',
+        description: 'huga',
         deletedAt: undefined,
         itemCategories: [],
       },
     ];
     const mockTotalCount: number = 2;
+    const mockDomainCategories: Category[] = [
+      new Category(1, 'Category 1', 'hoge', new Date(), new Date(), null),
+      new Category(2, 'Category 2', 'huga', new Date(), new Date(), null),
+    ];
 
     jest
       .spyOn(categoriesDatasource, 'findCategoryList')
       .mockReturnValue(of(mockCategories));
+    jest
+      .spyOn(mockCategoryDomainFactory, 'fromInfrastructureList')
+      .mockReturnValue(mockDomainCategories);
 
     categoryListService.service(input).subscribe({
       next: (result) => {
@@ -69,6 +85,16 @@ describe('CategoryListService', () => {
         expect(result.count).toBe(mockTotalCount);
         expect(result.categories.length).toBe(2);
         expect(result.categories).toHaveLength(mockCategories.length);
+        expect(result.categories[0].id).toBe(mockDomainCategories[0].id);
+        expect(result.categories[0].name).toBe(mockDomainCategories[0].name);
+        expect(result.categories[0].description).toBe(
+          mockDomainCategories[0].description
+        );
+        expect(result.categories[1].id).toBe(mockDomainCategories[1].id);
+        expect(result.categories[1].name).toBe(mockDomainCategories[1].name);
+        expect(result.categories[1].description).toBe(
+          mockDomainCategories[1].description
+        );
       },
       error: (error) => {
         done.fail(error);
