@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { ItemListController } from './item.controller';
+import { ItemController } from './item.controller';
 import { ItemListService } from '../../../application/services/item/item.list.service';
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
@@ -10,12 +10,12 @@ import { of, throwError } from 'rxjs';
 import { BadRequestException } from '@nestjs/common';
 
 describe('ItemController', () => {
-  let controller: ItemListController;
+  let controller: ItemController;
   let itemListService: ItemListServiceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      controllers: [ItemListController],
+      controllers: [ItemController],
       providers: [
         ItemListService, // 実際のサービスを提供
         {
@@ -37,7 +37,7 @@ describe('ItemController', () => {
       ],
     }).compile();
 
-    controller = module.get<ItemListController>(ItemListController);
+    controller = module.get<ItemController>(ItemController);
     itemListService = module.get<ItemListServiceInterface>(
       'ItemListServiceInterface'
     );
