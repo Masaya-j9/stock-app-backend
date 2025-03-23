@@ -9,11 +9,22 @@ import { Categories } from '../../../infrastructure/orm/entities/categories.enti
 import { ItemAndCategoryType } from '../../../infrastructure/types/item.and.category.type';
 import { NotFoundException } from '@nestjs/common';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
+import { Item } from '../../../domain/inventory/items/entities/item.entity';
+import { Category } from '../../../domain/inventory/items/entities/category.entity';
+import { ItemDomainFactory } from '../../../domain/inventory/items/factories/item.domain.factory';
+import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 
 describe('ItemListService', () => {
   let itemListService: ItemListService;
   let itemListDatasource: ItemListDatasource;
   let categoriesDatasource: CategoriesDatasource;
+
+  const mockItemDomainFactory = {
+    fromInfrastructure: jest.fn(),
+  };
+  const mockCategoryDomainFactory = {
+    fromInfrastructure: jest.fn(),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -33,6 +44,14 @@ describe('ItemListService', () => {
             findCategoryIdsAndItemIds: jest.fn(),
           },
         },
+        {
+          provide: ItemDomainFactory,
+          useValue: mockItemDomainFactory,
+        },
+        {
+          provide: CategoryDomainFactory,
+          useValue: mockCategoryDomainFactory,
+        },
       ],
     }).compile();
 
@@ -41,9 +60,11 @@ describe('ItemListService', () => {
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
   });
+
   it('should be defined', () => {
     expect(itemListService).toBeDefined();
   });
+
   it('登録されている物品の一覧を取得する', (done) => {
     const input: ItemListInputDto = {
       pages: 1,
@@ -71,7 +92,6 @@ describe('ItemListService', () => {
         deletedAt: null,
       },
     ];
-    const mockTotalCount: number = 2;
     const mockCategories: Categories[] = [
       {
         id: 1,
@@ -92,6 +112,33 @@ describe('ItemListService', () => {
         itemCategories: [],
       },
     ];
+    const mockDomainItems: Item[] = [
+      new Item(1, 'Item 1', 10, 'Description 1', new Date(), new Date(), null, [
+        1,
+      ]),
+      new Item(2, 'Item 2', 5, 'Description 2', new Date(), new Date(), null, [
+        2,
+      ]),
+    ];
+    const mockDomainCategories: Category[] = [
+      new Category(
+        1,
+        'Category 1',
+        'その他のカテゴリ',
+        new Date(),
+        new Date(),
+        null
+      ),
+      new Category(
+        2,
+        'Category 2',
+        'その他のカテゴリ',
+        new Date(),
+        new Date(),
+        null
+      ),
+    ];
+    const mockTotalCount: number = 2;
 
     const mockItemAndCategoryIds: ItemAndCategoryType[] = [
       {
@@ -116,6 +163,18 @@ describe('ItemListService', () => {
     jest
       .spyOn(categoriesDatasource, 'findCategoryIdsAndItemIds')
       .mockReturnValue(of(mockItemAndCategoryIds));
+    jest
+      .spyOn(mockItemDomainFactory, 'fromInfrastructure')
+      .mockImplementation((item) => {
+        if (item.id === 1) return mockDomainItems[0];
+        return mockDomainItems[1];
+      });
+    jest
+      .spyOn(mockCategoryDomainFactory, 'fromInfrastructure')
+      .mockImplementation((category) => {
+        if (category.id === 1) return mockDomainCategories[0];
+        return mockDomainCategories[1];
+      });
 
     itemListService.service(input).subscribe({
       next: (result) => {

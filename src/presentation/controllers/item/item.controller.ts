@@ -7,7 +7,7 @@ import { ItemListOutputDto } from '../../../application/dto/output/item/item.lis
 
 @ApiTags('items')
 @Controller('items')
-export class ItemListController {
+export class ItemController {
   constructor(
     @Inject('ItemListServiceInterface')
     private readonly ItemListService: ItemListServiceInterface
