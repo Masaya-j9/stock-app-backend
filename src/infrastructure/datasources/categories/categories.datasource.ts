@@ -146,6 +146,31 @@ export class CategoriesDatasource {
   }
 
   /**
+   * カテゴリーidが一致するカテゴリー情報を複数取得する
+   * 一致しない場合は空の配列を返す
+   *  @param categoryIds
+   *  @returns {Observable<Categories[]>} - カテゴリー情報の配列
+   */
+  findByCategoryIds(categoryIds: number[]): Observable<Categories[]> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select([
+          'categories.id AS id',
+          'categories.name AS name',
+          'categories.description AS description',
+          'categories.createdAt AS createdAt',
+          'categories.updatedAt AS updatedAt',
+          'categories.deletedAt AS deletedAt',
+        ])
+        .from('categories', 'categories')
+        .where('categories.id IN (:...categoryIds)', { categoryIds })
+        .andWhere('categories.deletedAt IS NULL')
+        .getRawMany()
+    );
+  }
+
+  /**
    * 入力値のカテゴリー情報を更新する
    * @param id
    * @param name

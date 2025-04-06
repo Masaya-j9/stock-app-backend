@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
 import { ItemListService } from './item.list.service';
-import { ItemListDatasource } from '../../../infrastructure/datasources/items/item.list.datasource';
+import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
@@ -16,7 +16,7 @@ import { CategoryDomainFactory } from '../../../domain/inventory/items/factories
 
 describe('ItemListService', () => {
   let itemListService: ItemListService;
-  let itemListDatasource: ItemListDatasource;
+  let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
 
   const mockItemDomainFactory = {
@@ -31,7 +31,7 @@ describe('ItemListService', () => {
       providers: [
         ItemListService,
         {
-          provide: ItemListDatasource,
+          provide: ItemsDatasource,
           useValue: {
             findItemList: jest.fn(),
             getTotalCount: jest.fn(),
@@ -56,7 +56,7 @@ describe('ItemListService', () => {
     }).compile();
 
     itemListService = module.get<ItemListService>(ItemListService);
-    itemListDatasource = module.get<ItemListDatasource>(ItemListDatasource);
+    itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
   });
@@ -151,11 +151,9 @@ describe('ItemListService', () => {
       },
     ];
 
+    jest.spyOn(itemsDatasource, 'findItemList').mockReturnValue(of(mockItems));
     jest
-      .spyOn(itemListDatasource, 'findItemList')
-      .mockReturnValue(of(mockItems));
-    jest
-      .spyOn(itemListDatasource, 'getTotalCount')
+      .spyOn(itemsDatasource, 'getTotalCount')
       .mockReturnValue(of(mockTotalCount));
     jest
       .spyOn(categoriesDatasource, 'findByCategories')
@@ -197,8 +195,8 @@ describe('ItemListService', () => {
       pages: 1,
       sortOrder: 0,
     };
-    jest.spyOn(itemListDatasource, 'findItemList').mockReturnValue(of([])); // 空の配列を返す
-    jest.spyOn(itemListDatasource, 'getTotalCount').mockReturnValue(of(0)); // 合計数を0に設定
+    jest.spyOn(itemsDatasource, 'findItemList').mockReturnValue(of([])); // 空の配列を返す
+    jest.spyOn(itemsDatasource, 'getTotalCount').mockReturnValue(of(0)); // 合計数を0に設定
     itemListService.service(input).subscribe({
       next: () => {
         done.fail('エラーが発生しませんでした');
