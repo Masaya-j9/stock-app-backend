@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { Items } from '../../orm/entities/items.entity';
+import { ItemCategories } from '../../orm/entities/intermediates/item.categories.entity';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, map, Observable } from 'rxjs';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
@@ -10,7 +11,7 @@ import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order'
 export class ItemsDatasource {
   constructor(
     @InjectDataSource()
-    private readonly dataSource: DataSource
+    public readonly dataSource: DataSource
   ) {}
   /**
    * 登録されている物品の一覧を取得する
@@ -59,5 +60,101 @@ export class ItemsDatasource {
         .where('items.id IN (:...itemsIds)', { itemsIds })
         .getRawOne()
     ).pipe(map((result) => Number(result.count)));
+  }
+
+  findItemByName(name: string): Observable<Items> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select('*')
+        .from(Items, 'items')
+        .where('items.name = :name', { name })
+        .getRawOne()
+    );
+  }
+
+  /**
+   * 物品を1件登録するクエリをトランザクションで実行するクエリ
+   * @param item - 登録する物品
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<{ id: number }>
+   */
+  createItemWithinTransaction(
+    name: string,
+    quantity: number,
+    description: string,
+    transactionalEntityManager: EntityManager
+  ): Observable<Partial<Items>> {
+    return from(
+      transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(Items)
+        .values({
+          name: name,
+          quantity: quantity,
+          description: description,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: null,
+        })
+        .execute()
+    ).pipe(
+      map((result) => {
+        const id =
+          result.identifiers.length > 0 ? result.identifiers[0].id : null;
+        if (id === null) {
+          throw new Error('物品IDが取得できません');
+        }
+        return {
+          id,
+          name,
+          quantity,
+          description,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        };
+      })
+    );
+  }
+
+  /**
+   * 中間テーブルにカテゴリーを追加するトランザクション処理用のクエリ
+   * @param itemId
+   * @param categoryIds
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<{ id: number }>
+   */
+  createItemCategoryWithinTransaction(
+    itemId: number,
+    categoryIds: number[],
+    transactionalEntityManager: EntityManager
+  ): Observable<{ ids: number[] }> {
+    const categoryValues = categoryIds.map((categoryId) => ({
+      item: { id: itemId },
+      category: { id: categoryId },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      deletedAt: null,
+    }));
+
+    return from(
+      transactionalEntityManager
+        .createQueryBuilder()
+        .insert()
+        .into(ItemCategories)
+        .values(categoryValues)
+        .execute()
+    ).pipe(
+      map((result) => {
+        const ids = result.identifiers.map(
+          (identifier: { id: number }) => identifier.id
+        );
+        if (ids.length === 0) {
+          throw new Error('中間テーブルIDが取得できません');
+        }
+        return { ids };
+      })
+    );
   }
 }
