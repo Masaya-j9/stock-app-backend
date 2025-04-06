@@ -55,7 +55,7 @@ export class ItemRegisterInputDto implements InputDto {
   //categoryIdsでnumber側の配列を受け取る
   @Transform(({ value }) => value, { toClassOnly: true })
   @ApiProperty({
-    example: [1, 2, 3],
+    example: [1, 2],
     description: '登録する物品のカテゴリーID',
     type: [Number],
   })
