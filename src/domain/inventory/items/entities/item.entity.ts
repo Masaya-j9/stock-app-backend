@@ -47,4 +47,34 @@ export class Item {
   get categoryIds(): number[] {
     return this._categoryIds;
   }
+
+  get createdAt(): Date {
+    return this._createdAt;
+  }
+
+  get updatedAt(): Date {
+    return this._updatedAt;
+  }
+
+  get deletedAt(): Date | null {
+    return this._deletedAt;
+  }
+
+  static create(
+    name: string,
+    quantity: number,
+    description: string,
+    categoryIds: number[]
+  ): Item {
+    return new Item(
+      0,
+      name,
+      quantity,
+      description,
+      new Date(),
+      new Date(),
+      null,
+      categoryIds
+    );
+  }
 }
