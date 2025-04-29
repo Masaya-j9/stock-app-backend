@@ -10,9 +10,9 @@ describe('Quantity', () => {
       expect(quantity).toBeInstanceOf(Quantity);
     });
 
-    it('数量が0以下の場合、エラーをスローすること', () => {
-      expect(() => createQuantity(0)).toThrow(BadRequestException);
+    it('数量が1未満の場合、エラーをスローすること', () => {
       expect(() => createQuantity(-1)).toThrow(BadRequestException);
+      expect(() => createQuantity(0)).toThrow(BadRequestException);
     });
     it('数量が100以上の場合、エラーをスローすること', () => {
       expect(() => createQuantity(101)).toThrow(BadRequestException);
