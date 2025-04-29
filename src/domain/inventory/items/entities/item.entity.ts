@@ -1,3 +1,7 @@
+import { Quantity } from '../value-objects/quantity';
+import { TextAmount } from '../value-objects/text.amount';
+import { categoryDiff } from '../types/category.diff.type';
+
 export class Item {
   private readonly _id: number;
   private readonly _name: string;
@@ -75,6 +79,94 @@ export class Item {
       new Date(),
       null,
       categoryIds
+    );
+  }
+
+  validateUpdate(
+    name?: string,
+    quantity?: number,
+    description?: string
+  ): boolean {
+    //未定義の場合
+    if (
+      name === undefined ||
+      quantity === undefined ||
+      description === undefined
+    ) {
+      return false;
+    }
+
+    //変更がない場合
+    if (
+      name === this._name &&
+      quantity === this._quantity &&
+      description === this._description
+    ) {
+      return false;
+    }
+
+    //値オブジェクトを使ったビジネスロジックのチェック
+    try {
+      Quantity.of(quantity);
+      TextAmount.of(name);
+      TextAmount.of(description);
+    } catch (error) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * itemのカテゴリを更新する際のカテゴリの差分を取得するメソッド
+   * @param newCategoryIds - 入力されたカテゴリIDの配列
+   * @returns categoryDiff - 追加差分のカテゴリIDと削除差分カテゴリIDの配列
+   */
+  getCategoryDiff(newCategoryIds: number[]): categoryDiff {
+    const currentSet = new Set(this._categoryIds);
+    const newSet = new Set(newCategoryIds);
+
+    const addIds = newCategoryIds.filter((id) => !currentSet.has(id));
+    const deleteIds = this._categoryIds.filter((id) => !newSet.has(id));
+
+    return {
+      addCategoryIds: addIds,
+      deleteCategoryIds: deleteIds,
+    };
+  }
+
+  static update(
+    currentItem: Item,
+    name: string,
+    quantity: number,
+    description: string,
+    categoryIds: number[]
+  ): Item | null {
+    if (!currentItem.validateUpdate(name, quantity, description)) {
+      console.log('itemは更新できません');
+      return null;
+    }
+
+    const { addCategoryIds: addIds, deleteCategoryIds: deleteIds } =
+      currentItem.getCategoryDiff(categoryIds);
+    if (addIds.length === 0 && deleteIds.length === 0) {
+      return null;
+    }
+
+    const updatedCategoryIds = [
+      ...currentItem.categoryIds.filter((id) => !deleteIds.includes(id)),
+      ...addIds,
+    ];
+
+    return new Item(
+      currentItem._id,
+      name,
+      quantity,
+      description,
+      currentItem._createdAt,
+      new Date(),
+      null,
+      updatedCategoryIds
     );
   }
 }

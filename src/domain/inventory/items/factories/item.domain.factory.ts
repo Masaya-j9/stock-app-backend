@@ -22,4 +22,17 @@ export class ItemDomainFactory {
       categoryIds
     );
   }
+
+  static fromInfrastructureSingle(item: Items, categoryIds: number[]): Item {
+    return new Item(
+      item.id,
+      item.name,
+      item.quantity,
+      item.description,
+      item.createdAt,
+      item.updatedAt,
+      item.deletedAt,
+      categoryIds
+    );
+  }
 }
