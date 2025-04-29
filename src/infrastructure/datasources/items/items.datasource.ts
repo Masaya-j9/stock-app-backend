@@ -449,4 +449,25 @@ export class ItemsDatasource {
       })
     );
   }
+
+  /**
+   * 入力IDに該当する物品を論理削除するクエリ
+   * @param id - 物品ID
+   * @returns Observable<void>
+   */
+  deletedById(itemId: number): Observable<void> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .update(Items)
+        .set({
+          updatedAt: new Date(),
+          deletedAt: new Date(),
+        })
+        .where('items.id = :id', { id: itemId })
+        .execute()
+    ).pipe(
+      map(() => undefined) // void型を返す
+    );
+  }
 }

@@ -4,13 +4,16 @@ import { ItemListService } from '../../../application/services/item/item.list.se
 import { ItemRegisterService } from '../../../application/services/item/item.register.service';
 import { ItemUpdateService } from '../../../application/services/item/item.update.service';
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
+import { ItemDeleteService } from '../../../application/services/item/item.delete.service';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
+import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.update.input.dto';
 import { ItemUpdateOutputDto } from '../../../application/dto/output/item/item.update.output.dto';
-
+import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.delete.input.dto';
+import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
@@ -27,6 +30,7 @@ describe('ItemController', () => {
   let itemListService: ItemListServiceInterface;
   let itemRegisterService: ItemRegisterServiceInterface;
   let itemUpdateService: ItemUpdateServiceInterface;
+  let itemDeleteService: ItemDeleteServiceInterface;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
 
@@ -37,6 +41,7 @@ describe('ItemController', () => {
         ItemListService, // 実際のサービスを提供
         ItemRegisterService,
         ItemUpdateService,
+        ItemDeleteService,
         {
           provide: 'ItemListServiceInterface',
           useClass: ItemListService, // インターフェースを実装するクラスを提供
@@ -48,6 +53,10 @@ describe('ItemController', () => {
         {
           provide: 'ItemUpdateServiceInterface',
           useClass: ItemUpdateService,
+        },
+        {
+          provide: 'ItemDeleteServiceInterface',
+          useClass: ItemDeleteService,
         },
         {
           provide: ItemsDatasource,
@@ -83,6 +92,9 @@ describe('ItemController', () => {
     );
     itemUpdateService = module.get<ItemUpdateServiceInterface>(
       'ItemUpdateServiceInterface'
+    );
+    itemDeleteService = module.get<ItemDeleteServiceInterface>(
+      'ItemDeleteServiceInterface'
     );
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
@@ -988,6 +1000,115 @@ describe('ItemController', () => {
           expect(err).toBeInstanceOf(InternalServerErrorException);
           expect(err.response.statusCode).toBe(500);
           expect(err.response.message).toBe('Transaction failed');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('deleteItem', () => {
+    it('正常に論理削除することができる', (done) => {
+      const input: ItemDeleteInputDto = {
+        itemId: 1,
+      };
+      const result: ItemDeleteOutputDto = {
+        id: 1,
+        name: 'itemName',
+        quantity: 10,
+        description: 'itemDescription',
+        updatedAt: new Date(),
+        deletedAt: new Date(),
+      };
+      jest
+        .spyOn(itemDeleteService, 'service')
+        .mockImplementation(() => of(result));
+      controller.deleteItem(input.itemId).subscribe({
+        next: (response) => {
+          expect(response).toEqual(result);
+          expect(response.id).toBe(result.id);
+          expect(response.name).toBe(result.name);
+          expect(response.quantity).toBe(result.quantity);
+          expect(response.description).toBe(result.description);
+        },
+        error: (err) => {
+          fail('Expected no error, but received an error: ' + err);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDが存在しないとき、404エラーを返す', (done) => {
+      const input: ItemDeleteInputDto = {
+        itemId: 1,
+      };
+      jest
+        .spyOn(itemDeleteService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Item not found'))
+        );
+      controller.deleteItem(input.itemId).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Item not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDに関連するカテゴリが存在しないとき、404エラーを返す', (done) => {
+      const input: ItemDeleteInputDto = {
+        itemId: 1,
+      };
+      jest
+        .spyOn(itemDeleteService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Category not found'))
+        );
+      controller.deleteItem(input.itemId).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Category not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDがすでに論理削除されている場合、409エラーを返す', (done) => {
+      const input: ItemDeleteInputDto = {
+        itemId: 1,
+      };
+      jest
+        .spyOn(itemDeleteService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new ConflictException('Item already deleted'))
+        );
+      controller.deleteItem(input.itemId).subscribe({
+        next: () => {
+          fail('Expected 409 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(ConflictException);
+          expect(err.response.statusCode).toBe(409);
+          expect(err.response.message).toBe('Item already deleted');
           done();
         },
         complete: () => {

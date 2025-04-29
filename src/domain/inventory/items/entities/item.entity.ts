@@ -169,4 +169,17 @@ export class Item {
       updatedCategoryIds
     );
   }
+
+  delete(): Item {
+    return new Item(
+      this._id,
+      this._name,
+      this._quantity,
+      this._description,
+      this._createdAt,
+      this._updatedAt,
+      new Date(),
+      this._categoryIds
+    );
+  }
 }
