@@ -6,12 +6,14 @@ import {
   Post,
   Query,
   Patch,
+  Delete,
   Param,
   ParseIntPipe,
 } from '@nestjs/common';
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
+import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { Observable } from 'rxjs';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
@@ -20,6 +22,8 @@ import { ItemRegisterInputDto } from '../../../application/dto/input/item/item.r
 import { ItemRegisterOutputDto } from '../../../application/dto/output/item/item.register.output.dto';
 import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.update.input.dto';
 import { ItemUpdateOutputDto } from '../../../application/dto/output/item/item.update.output.dto';
+import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.delete.input.dto';
+import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
 
 @ApiTags('items')
 @Controller('items')
@@ -30,7 +34,9 @@ export class ItemController {
     @Inject('ItemRegisterServiceInterface')
     private readonly ItemRegisterService: ItemRegisterServiceInterface,
     @Inject('ItemUpdateServiceInterface')
-    private readonly ItemUpdateService: ItemUpdateServiceInterface
+    private readonly ItemUpdateService: ItemUpdateServiceInterface,
+    @Inject('ItemDeleteServiceInterface')
+    private readonly ItemDeleteService: ItemDeleteServiceInterface
   ) {}
 
   /**
@@ -93,5 +99,26 @@ export class ItemController {
     @Body() body: ItemUpdateInputDto
   ): Observable<ItemUpdateOutputDto> {
     return this.ItemUpdateService.service(body, itemId);
+  }
+
+  /**
+   * @param request - リクエスト情報
+   * @return {Observable<ItemDeleteOutputDto>} - 削除された物品情報を含むObervable
+   */
+  @Delete(':item_id')
+  @ApiOperation({
+    summary: '物品を論理削除するエンドポイント',
+    description: '物品を削除するAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Deleted',
+    type: ItemDeleteOutputDto,
+  })
+  deleteItem(
+    @Param('item_id', ParseIntPipe) itemId: number
+  ): Observable<ItemDeleteOutputDto> {
+    const request: ItemDeleteInputDto = { itemId };
+    return this.ItemDeleteService.service(request);
   }
 }
