@@ -1,5 +1,6 @@
 #Node.jsモジュール
 node_modules/
+npm-debug.log
 
 #ビルド青果物
 dist/

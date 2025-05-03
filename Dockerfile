@@ -7,6 +7,8 @@ WORKDIR /api
 # package.json と package-lock.json をコピーして依存関係をインストール
 COPY package*.json ./
 
+RUN npm cache clean --force
+
 # 依存関係をインストール
 RUN npm install
 

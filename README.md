@@ -22,12 +22,26 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
-## モデリングした内容について
+## 管理画面について
 ### APIドキュメントについて
 起動後、以下のエンドポイントをブラウザでアクセスする
 ```
 http://localhost:4000/swagger
 ```
+
+### RabbitMQの管理画面の確認方法
+1. docker composeでRabbitMQを起動
+```
+docker compose up mq -d
+```
+2. ブラウザで 下記のURLにアクセスする
+```
+http://localhost:15672/
+```
+3. ユーザー・パスワードは.envファイルに記載してあるものを入力する
+
+
+## モデリングした内容について
 ### ユビキタス言語について
 - [ユビキタス言語集のURL](https://docs.google.com/spreadsheets/d/1iG-OT2WOR4m4MekhEshM-utDvKH2KD6XZsPkvSSkf1k/edit?gid=0#gid=0)を参照
 
@@ -112,11 +126,19 @@ docker volume rm ${volume名}
 ```
 docker compose build
 ```
+#### apiコンテナを起動する
+```
+docker compose up api -d
+```
 
+#### DBコンテナを起動する
 ```
 docker compose up db -d
 ```
-
+#### RabbitMQコンテナを起動する
+```
+docker compose up mq -d
+```
 5. ビルドして、初期化する
 ```
 npm run build

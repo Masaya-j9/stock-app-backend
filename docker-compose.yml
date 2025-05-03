@@ -7,6 +7,7 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_NAME: ${DB_NAME}
+      RABBITMQ_URI: ${RABBITMQ_URI}
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -18,11 +19,9 @@ services:
       - type: bind
         source: .
         target: /api
-      - type: volume
-        source: node_modules
-        target: /api/node_modules
     depends_on:
       - db
+      - mq
 
   db:
     image: mysql:8.0
@@ -40,6 +39,19 @@ services:
       - mysql_data:/var/lib/mysql
     user: "1000:1000"
 
+  mq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    ports:
+      - 5672:${RABBITMQ_PORT}
+      - 15672:${RABBITMQ_ADMIN_PORT}
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USERNAME}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
 volumes:
   node_modules:
   mysql_data:
+  rabbitmq_data:
