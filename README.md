@@ -112,11 +112,19 @@ docker volume rm ${volume名}
 ```
 docker compose build
 ```
+#### apiコンテナを起動する
+```
+docker compose up api -d
+```
 
+#### DBコンテナを起動する
 ```
 docker compose up db -d
 ```
-
+#### RabbitMQコンテナを起動する
+```
+docker compose up mq -d
+```
 5. ビルドして、初期化する
 ```
 npm run build
