@@ -8,9 +8,15 @@ import { ItemDeleteService } from '../../application/services/item/item.delete.s
 import { DatabaseModule } from './database.module';
 import { ItemsDatasource } from 'src/infrastructure/datasources/items/items.datasource';
 import { CategoriesModule } from './categories.module';
+import { RabbitMQModule } from './rabbitmq.module';
 
 @Module({
-  imports: [DatabaseModule, TypeOrmModule.forFeature([]), CategoriesModule],
+  imports: [
+    DatabaseModule,
+    TypeOrmModule.forFeature([]),
+    CategoriesModule,
+    RabbitMQModule,
+  ],
   controllers: [ItemController],
   providers: [
     ItemsDatasource,
