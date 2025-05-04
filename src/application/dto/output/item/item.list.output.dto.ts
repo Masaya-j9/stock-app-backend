@@ -118,6 +118,14 @@ export class ItemListOutputDto implements OutputDto {
   @Expose({ name: 'count' })
   count: number;
 
+  @ApiProperty({
+    example: 6,
+    description: '総ページ数',
+    type: Number,
+  })
+  @Expose({ name: 'total_pages' })
+  totalPages: number;
+
   @Type(() => ItemResults)
   @ApiProperty({
     example: [

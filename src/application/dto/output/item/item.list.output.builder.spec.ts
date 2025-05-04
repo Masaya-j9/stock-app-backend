@@ -14,6 +14,7 @@ describe('ItemListOutputBuilder', () => {
     ]),
   ];
   const mockTotalCount: number = 2;
+  const mockTotalPages: number = 1;
   const mockDomainCategories: Category[] = [
     new Category(
       1,
@@ -38,12 +39,14 @@ describe('ItemListOutputBuilder', () => {
       const builder = new ItemListOutputBuilder(
         mockDomainItems,
         mockTotalCount,
+        mockTotalPages,
         mockDomainCategories
       );
 
       const result = builder.build();
       expect(result).toBeInstanceOf(ItemListOutputDto);
       expect(result.count).toBe(mockTotalCount);
+      expect(result.totalPages).toBe(mockTotalPages);
       expect(result.results).toHaveLength(mockDomainItems.length);
 
       mockDomainItems.forEach((item, index) => {
@@ -73,7 +76,12 @@ describe('ItemListOutputBuilder', () => {
 
     it('itemsが空の場合、404エラーを返す', () => {
       const mockTotalCount = 0;
-      const builder = new ItemListOutputBuilder([], mockTotalCount, []);
+      const builder = new ItemListOutputBuilder(
+        [],
+        mockTotalCount,
+        mockTotalPages,
+        []
+      );
       expect(() => builder.build()).toThrow(
         new HttpException('Items not found', HttpStatus.NOT_FOUND)
       );

@@ -7,11 +7,18 @@ import { NotFoundException } from '@nestjs/common';
 export class ItemListOutputBuilder implements OutputBuilder<ItemListOutputDto> {
   private _totalCount: number;
   private _items: Item[];
+  private _totalPages: number;
   private _categories: Category[];
 
-  constructor(items: Item[], totalCount: number, categories: Category[]) {
+  constructor(
+    items: Item[],
+    totalCount: number,
+    totalPage: number,
+    categories: Category[]
+  ) {
     this._totalCount = totalCount;
     this._items = items;
+    this._totalPages = totalPage;
     this._categories = categories;
   }
 
@@ -23,6 +30,7 @@ export class ItemListOutputBuilder implements OutputBuilder<ItemListOutputDto> {
       : (() => {
           const output = new ItemListOutputDto();
           output.count = this._totalCount;
+          output.totalPages = this._totalPages;
           output.results = this._items.map((item) => ({
             id: item.id,
             name: item.name,

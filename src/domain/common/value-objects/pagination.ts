@@ -42,6 +42,18 @@ export class Pagination implements DomainPrimitive<number, Pagination> {
   }
 
   /**
+   * 総ページ数を計算する
+   * @param totalItemCount 総物品数
+   * @returns 総ページ数
+   */
+  calcTotalPages(totalItemCount: number): number {
+    if (totalItemCount <= 0) {
+      throw new BadRequestException('総ページ数が0以下です');
+    }
+    return Math.ceil(totalItemCount / this.ITEM_PER_PAGE);
+  }
+
+  /**
    * Paginationインスタンスを生成する
    * @param value ページ番号
    * @returns Paginationインスタンス
