@@ -8,6 +8,8 @@ import { CategoriesDatasource } from '../../../infrastructure/datasources/catego
 import { ItemListOutputBuilder } from '../../dto/output/item/item.list.output.builder';
 import { ItemDomainFactory } from '../../../domain/inventory/items/factories/item.domain.factory';
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
+import { Pagination } from '../../../domain/common/value-objects/pagination';
+import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
 
 @Injectable()
 export class ItemListService implements ItemListServiceInterface {
@@ -20,13 +22,17 @@ export class ItemListService implements ItemListServiceInterface {
   /**
    * 登録されいている物品の一覧を取得する
    * @param {ItemListInputDto} input - リクエスト情報
-   * @returns{Observable<Builder>} - 登録されている物品の一覧情報を含むObservableオブジェクト
+   * @returns{Observable<ItemListOutputDto>} - 登録されている物品の一覧情報を含むObservableオブジェクト
    *
    * @throws {HttpException} 物品が見つからない場合、404エラーをスローします。
    */
   service(input: ItemListInputDto): Observable<ItemListOutputDto> {
-    const { pages, sortOrder } = input;
-    return this.ItemsDatasource.findItemList(pages, sortOrder).pipe(
+    const pages = Pagination.of(input.pages);
+    const sortOrder = SortOrder.of(input.sortOrder);
+    return this.ItemsDatasource.findItemList(
+      pages.value(),
+      sortOrder.value()
+    ).pipe(
       switchMap((items) => {
         if (items.length === 0) {
           return throwError(() => new NotFoundException('Items not found'));
@@ -36,9 +42,10 @@ export class ItemListService implements ItemListServiceInterface {
           this.categoriesDatasource.findByCategories(itemIds),
           this.categoriesDatasource.findCategoryIdsAndItemIds(itemIds),
           of(items),
+          this.ItemsDatasource.countAll(),
         ]);
       }),
-      map(([categories, itemIdsAndCategoryIds, items]) => {
+      map(([categories, itemIdsAndCategoryIds, items, totalItemCount]) => {
         const totalCount = items.length;
         const domainItems = items.map((item) =>
           ItemDomainFactory.fromInfrastructure(item, itemIdsAndCategoryIds)
@@ -49,6 +56,7 @@ export class ItemListService implements ItemListServiceInterface {
         return new ItemListOutputBuilder(
           domainItems,
           totalCount,
+          pages.calcTotalPages(totalItemCount),
           domainCategories
         ).build();
       })
