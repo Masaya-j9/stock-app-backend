@@ -470,4 +470,19 @@ export class ItemsDatasource {
       map(() => undefined) // void型を返す
     );
   }
+
+  /**
+   * itemテーブルで論理削除されていないレコードの全件数を取得するクエリ
+   * @returns Observable<number>
+   */
+  countAll(): Observable<number> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select('COUNT(items.id)', 'count')
+        .from('items', 'items')
+        .where('items.deletedAt IS NULL')
+        .getRawOne()
+    ).pipe(map((result) => result.count));
+  }
 }
