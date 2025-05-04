@@ -68,4 +68,16 @@ describe('Pagination', () => {
       expect(pagination.itemsPerPage()).toBe(10);
     });
   });
+
+  describe('calcTotalPages', () => {
+    it('総ページ数が計算できること', () => {
+      const pagination = Pagination.of(1);
+      expect(pagination.calcTotalPages(100)).toBe(10);
+    });
+
+    it('総ページ数が0以下の場合、エラーをスローすること', () => {
+      const pagination = Pagination.of(1);
+      expect(() => pagination.calcTotalPages(0)).toThrow(BadRequestException);
+    });
+  });
 });

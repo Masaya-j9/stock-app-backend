@@ -63,6 +63,7 @@ describe('ItemController', () => {
           useValue: {
             findItemList: jest.fn(() => of([])),
             findItemByName: jest.fn(() => of(undefined)),
+            countAll: jest.fn(() => of(0)),
             createItemWithinTransaction: jest.fn(() => of({})),
             createItemCategoryWithinTransaction: jest.fn(() => of({})),
             findItemById: jest.fn(() => of({})),
@@ -110,6 +111,7 @@ describe('ItemController', () => {
       const query: ItemListInputDto = { pages: 1, sortOrder: 0 };
       const result: ItemListOutputDto = {
         count: 2,
+        totalPages: 1,
         results: [
           {
             id: 1,

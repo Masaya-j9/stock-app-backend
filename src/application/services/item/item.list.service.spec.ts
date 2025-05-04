@@ -35,6 +35,7 @@ describe('ItemListService', () => {
           useValue: {
             findItemList: jest.fn(),
             getTotalCount: jest.fn(),
+            countAll: jest.fn(),
           },
         },
         {
@@ -140,6 +141,8 @@ describe('ItemListService', () => {
     ];
     const mockTotalCount: number = 2;
 
+    const mockTotalPageCount: number = 1;
+
     const mockItemAndCategoryIds: ItemAndCategoryType[] = [
       {
         itemId: 1,
@@ -162,6 +165,9 @@ describe('ItemListService', () => {
       .spyOn(categoriesDatasource, 'findCategoryIdsAndItemIds')
       .mockReturnValue(of(mockItemAndCategoryIds));
     jest
+      .spyOn(itemsDatasource, 'countAll')
+      .mockReturnValue(of(mockTotalPageCount));
+    jest
       .spyOn(mockItemDomainFactory, 'fromInfrastructure')
       .mockImplementation((item) => {
         if (item.id === 1) return mockDomainItems[0];
@@ -178,6 +184,7 @@ describe('ItemListService', () => {
       next: (result) => {
         expect(result).toBeInstanceOf(ItemListOutputDto);
         expect(result.count).toBe(mockTotalCount);
+        expect(result.totalPages).toBe(mockTotalPageCount);
         expect(result.results.length).toBe(2);
         expect(result.results[0].id).toBe(mockItems[0].id);
       },
