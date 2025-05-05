@@ -5,15 +5,19 @@ import { ItemRegisterService } from '../../../application/services/item/item.reg
 import { ItemUpdateService } from '../../../application/services/item/item.update.service';
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
 import { ItemDeleteService } from '../../../application/services/item/item.delete.service';
+import { ItemSingleService } from '../../../application/services/item/item.single.service';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
+import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.update.input.dto';
 import { ItemUpdateOutputDto } from '../../../application/dto/output/item/item.update.output.dto';
 import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.delete.input.dto';
 import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
+import { ItemSingleInputDto } from '../../../application/dto/input/item/item.single.input.dto';
+import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
@@ -31,6 +35,7 @@ describe('ItemController', () => {
   let itemRegisterService: ItemRegisterServiceInterface;
   let itemUpdateService: ItemUpdateServiceInterface;
   let itemDeleteService: ItemDeleteServiceInterface;
+  let itemSingleService: ItemSingleServiceInterface;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
 
@@ -59,6 +64,10 @@ describe('ItemController', () => {
           useClass: ItemDeleteService,
         },
         {
+          provide: 'ItemSingleServiceInterface',
+          useClass: ItemSingleService,
+        },
+        {
           provide: ItemsDatasource,
           useValue: {
             findItemList: jest.fn(() => of([])),
@@ -79,6 +88,7 @@ describe('ItemController', () => {
           provide: CategoriesDatasource,
           useValue: {
             findByCategoryIds: jest.fn(() => of([])),
+            findCategoriesByItemId: jest.fn(() => of([])),
           },
         },
       ],
@@ -96,6 +106,9 @@ describe('ItemController', () => {
     );
     itemDeleteService = module.get<ItemDeleteServiceInterface>(
       'ItemDeleteServiceInterface'
+    );
+    itemSingleService = module.get<ItemSingleServiceInterface>(
+      'ItemSingleServiceInterface'
     );
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
@@ -1111,6 +1124,127 @@ describe('ItemController', () => {
           expect(err).toBeInstanceOf(ConflictException);
           expect(err.response.statusCode).toBe(409);
           expect(err.response.message).toBe('Item already deleted');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('findItemSingle', () => {
+    it('正常に物品を取得できる', (done) => {
+      const input: ItemSingleInputDto = {
+        itemId: 1,
+      };
+      const result: ItemSingleOutputDto = {
+        id: 1,
+        name: 'itemName',
+        quantity: 10,
+        description: 'itemDescription',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        itemCategories: [
+          {
+            id: 1,
+            name: 'categoryName',
+            description: 'categoryDescription',
+          },
+          {
+            id: 2,
+            name: 'categoryName',
+            description: 'categoryDescription',
+          },
+        ],
+      };
+      jest
+        .spyOn(itemSingleService, 'service')
+        .mockImplementation(() => of(result));
+      controller.findItemSingle(input.itemId).subscribe({
+        next: (response) => {
+          expect(response).toEqual(result);
+          expect(response.id).toBe(result.id);
+          expect(response.name).toBe(result.name);
+          expect(response.quantity).toBe(result.quantity);
+          expect(response.description).toBe(result.description);
+        },
+        error: (err) => {
+          fail('Expected no error, but received an error: ' + err);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDが存在しない場合、404エラーを返す', (done) => {
+      const input: ItemSingleInputDto = {
+        itemId: 1,
+      };
+      jest
+        .spyOn(itemSingleService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Item not found'))
+        );
+      controller.findItemSingle(input.itemId).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Item not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDに関連するカテゴリが存在しない場合、404エラーを返す', (done) => {
+      const input: ItemSingleInputDto = {
+        itemId: 1,
+      };
+      jest
+        .spyOn(itemSingleService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Category not found'))
+        );
+      controller.findItemSingle(input.itemId).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Category not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDが0以下の数値だった場合、400エラーを返す', (done) => {
+      const input: ItemSingleInputDto = {
+        itemId: 0,
+      };
+      jest
+        .spyOn(itemSingleService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new BadRequestException('Invalid itemId'))
+        );
+      controller.findItemSingle(input.itemId).subscribe({
+        next: () => {
+          fail('Expected 400 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(BadRequestException);
+          expect(err.response.statusCode).toBe(400);
+          expect(err.response.message).toBe('Invalid itemId');
           done();
         },
         complete: () => {
