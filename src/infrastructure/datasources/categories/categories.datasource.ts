@@ -226,4 +226,33 @@ export class CategoriesDatasource {
         .execute()
     ).pipe(map(() => {}));
   }
+
+  /**
+   * itemIdに該当するカテゴリ情報を全件取得する
+   * @param itemId
+   * @returns {Observable<Categories[]>} - カテゴリー情報の配列
+   */
+  findCategoriesByItemId(itemId: number): Observable<Categories[]> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select([
+          'categories.id AS id',
+          'categories.name AS name',
+          'categories.description AS description',
+          'categories.createdAt AS createdAt',
+          'categories.updatedAt AS updatedAt',
+          'categories.deletedAt AS deletedAt',
+        ])
+        .from('categories', 'categories')
+        .innerJoin(
+          'item_categories',
+          'item_categories',
+          'categories.id = item_categories.category_id'
+        )
+        .where('item_categories.item_id = :itemId', { itemId })
+        .andWhere('categories.deletedAt IS NULL')
+        .getRawMany()
+    );
+  }
 }
