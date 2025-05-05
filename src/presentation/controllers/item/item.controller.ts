@@ -14,6 +14,7 @@ import { ItemListServiceInterface } from '../../../application/services/item/ite
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
+import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { Observable } from 'rxjs';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
@@ -24,6 +25,8 @@ import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.upd
 import { ItemUpdateOutputDto } from '../../../application/dto/output/item/item.update.output.dto';
 import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.delete.input.dto';
 import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
+import { ItemSingleInputDto } from '../../../application/dto/input/item/item.single.input.dto';
+import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
 
 @ApiTags('items')
 @Controller('items')
@@ -36,12 +39,14 @@ export class ItemController {
     @Inject('ItemUpdateServiceInterface')
     private readonly ItemUpdateService: ItemUpdateServiceInterface,
     @Inject('ItemDeleteServiceInterface')
-    private readonly ItemDeleteService: ItemDeleteServiceInterface
+    private readonly ItemDeleteService: ItemDeleteServiceInterface,
+    @Inject('ItemSingleServiceInterface')
+    private readonly ItemSingleService: ItemSingleServiceInterface
   ) {}
 
   /**
    * @param request - リクエスト情報
-   * @return {Observable<ItemListInputDto>} - 登録されている物品の一覧情報を含むObervable
+   * @return {Observable<ItemListInputDto>} - 登録されている物品の一覧情報を含むObservable
    */
 
   @ApiOperation({
@@ -62,7 +67,7 @@ export class ItemController {
 
   /**
    * @param request - リクエスト情報
-   * @return {Observable<ItemRegisterOutputDto>} - 登録する物品情報を含むObervable
+   * @return {Observable<ItemRegisterOutputDto>} - 登録する物品情報を含むObservable
    */
   @ApiOperation({
     summary: '物品を登録するエンドポイント',
@@ -82,7 +87,7 @@ export class ItemController {
 
   /**
    * @param request - リクエスト情報
-   * @return {Observable<ItemUpdateOutputDto>} - 更新された物品情報を含むObervable
+   * @return {Observable<ItemUpdateOutputDto>} - 更新された物品情報を含むObservable
    */
   @ApiOperation({
     summary: '物品を更新するエンドポイント',
@@ -103,7 +108,7 @@ export class ItemController {
 
   /**
    * @param request - リクエスト情報
-   * @return {Observable<ItemDeleteOutputDto>} - 削除された物品情報を含むObervable
+   * @return {Observable<ItemDeleteOutputDto>} - 削除された物品情報を含むObservable
    */
   @Delete(':item_id')
   @ApiOperation({
@@ -120,5 +125,26 @@ export class ItemController {
   ): Observable<ItemDeleteOutputDto> {
     const request: ItemDeleteInputDto = { itemId };
     return this.ItemDeleteService.service(request);
+  }
+
+  /**
+   * @param request - リクエスト情報
+   * @return {Observable<ItemSingleOutputDto>} - 物品情報を含むObservable
+   */
+  @ApiOperation({
+    summary: '単一の物品を取得するエンドポイント',
+    description: '単一の物品を取得するAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OK',
+    type: ItemSingleOutputDto,
+  })
+  @Get(':item_id')
+  findItemSingle(
+    @Param('item_id', ParseIntPipe) itemId: number
+  ): Observable<ItemSingleOutputDto> {
+    const request: ItemSingleInputDto = { itemId };
+    return this.ItemSingleService.service(request);
   }
 }
