@@ -63,11 +63,11 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
       switchMap(([items, currentCategoryIds, conflictItem]) => {
         this.validateItemFound(items);
         this.validateCategoryIdsFound(currentCategoryIds);
-        this.validateUniqueItemName(name, items.name);
-        this.validateUniqueOtherItem(
-          name,
-          conflictItem ? conflictItem.name : undefined
-        );
+
+        // conflictItemが存在し、かつ自分自身でない場合のみ重複チェック
+        if (conflictItem && conflictItem.id !== items.id) {
+          this.validateUniqueOtherItem(name, conflictItem.name);
+        }
 
         // 現在のDBにあるItemの情報
         const domainItem: Item = ItemDomainFactory.fromInfrastructureSingle(
@@ -147,20 +147,6 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
   private validateCategoryIdsFound(categoryIds: number[]): Observable<void> {
     if (!categoryIds) {
       return throwError(() => new NotFoundException('Category IDs not found'));
-    }
-    return of(undefined);
-  }
-
-  //更新後の物品名と現在の物品名との重複チェック
-  private validateUniqueItemName(
-    name: TextAmount,
-    currentName: string
-  ): Observable<void> {
-    const uniqueItemName = Unique.of(name.value(), currentName);
-    if (uniqueItemName.isDuplicate(currentName)) {
-      return throwError(
-        () => new ConflictException('This value is not unique')
-      );
     }
     return of(undefined);
   }

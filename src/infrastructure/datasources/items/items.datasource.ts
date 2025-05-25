@@ -248,20 +248,29 @@ export class ItemsDatasource {
     addCategoryIds: number[],
     manager: EntityManager
   ): Observable<number[]> {
+    if (!addCategoryIds || addCategoryIds.length === 0) {
+      // 空配列なら即空配列を返す
+      return new Observable<number[]>((subscriber) => {
+        subscriber.next([]);
+        subscriber.complete();
+      });
+    }
     const query = manager
       .getRepository(ItemCategories)
       .createQueryBuilder('ic')
+      .leftJoinAndSelect('ic.category', 'category')
       .withDeleted()
       .where('ic.item.id = :itemId', { itemId })
-      .andWhere('ic.category.id IN (:...categoryIds)', { addCategoryIds })
+      .andWhere('ic.category.id IN (:categoryIds)', {
+        categoryIds: addCategoryIds,
+      })
       .getMany();
 
     return from(query).pipe(
-      map(
-        (existing) =>
-          existing
-            .filter((ic) => ic.deletedAt !== null) // 論理削除されているものだけ
-            .map((ic) => ic.category.id) // categoryId を抽出
+      map((existing) =>
+        existing
+          .filter((ic) => ic.deletedAt !== null)
+          .map((ic) => ic.category.id)
       )
     );
   }
@@ -282,7 +291,7 @@ export class ItemsDatasource {
         .createQueryBuilder()
         .update(ItemCategories)
         .set({ deletedAt: null, updatedAt: new Date() })
-        .where('item.id = :itemId AND category.id IN (:...categoryIds)', {
+        .where('item.id = :itemId AND category.id IN (:categoryIds)', {
           itemId: itemId,
           categoryIds: restoreCategoryIds,
         })
@@ -359,7 +368,7 @@ export class ItemsDatasource {
           updatedAt: new Date(),
           deletedAt: new Date(),
         })
-        .where('item.id = :itemId AND category.id IN (:...categoryIds)', {
+        .where('item.id = :itemId AND category.id IN (:categoryIds)', {
           itemId: itemId,
           categoryIds: deleteCategoryIds,
         })

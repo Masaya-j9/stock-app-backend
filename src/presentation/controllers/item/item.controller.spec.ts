@@ -905,35 +905,6 @@ describe('ItemController', () => {
       });
     });
 
-    it('更新後の物品名と現在の物品名が同じ場合、409エラーを返す', (done) => {
-      const inputItemId = 1;
-      const input: ItemUpdateInputDto = {
-        name: 'updatedItemName',
-        quantity: 11,
-        description: 'updatedItemDescription',
-        categoryIds: [1, 2, 3],
-      };
-      jest
-        .spyOn(itemUpdateService, 'service')
-        .mockImplementation(() =>
-          throwError(() => new ConflictException('This value is not unique'))
-        );
-      controller.updateItem(inputItemId, input).subscribe({
-        next: () => {
-          fail('Expected 409 error, but received results');
-        },
-        error: (err) => {
-          expect(err).toBeInstanceOf(ConflictException);
-          expect(err.response.statusCode).toBe(409);
-          expect(err.response.message).toBe('This value is not unique');
-          done();
-        },
-        complete: () => {
-          done();
-        },
-      });
-    });
-
     it('更新後の物品名と他の物品名が同じ場合、409エラーを返す', (done) => {
       const inputItemId = 1;
       const input: ItemUpdateInputDto = {
