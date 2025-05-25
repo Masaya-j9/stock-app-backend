@@ -9,13 +9,13 @@ import {
   Min,
   Max,
   IsArray,
-  ArrayUnique,
 } from 'class-validator';
 
 const ITEM_NAME_MIN_LENGTH: number = 1;
 const ITEM_NAME_MAX_LENGTH: number = 255;
 const ITEM_QUANTITY_MIN: number = 1;
 const ITEM_QUANTITY_MAX: number = 1000;
+const ITEM_DESCRIPTION_MAX_LENGTH: number = 255;
 
 export class ItemUpdateInputDto implements InputDto {
   @ApiProperty({
@@ -48,7 +48,7 @@ export class ItemUpdateInputDto implements InputDto {
   @IsNotEmpty()
   @IsString()
   @MinLength(ITEM_NAME_MIN_LENGTH)
-  @MaxLength(ITEM_NAME_MAX_LENGTH)
+  @MaxLength(ITEM_DESCRIPTION_MAX_LENGTH)
   description: string;
 
   @ApiProperty({
@@ -58,7 +58,6 @@ export class ItemUpdateInputDto implements InputDto {
   })
   @IsNotEmpty()
   @IsArray()
-  @ArrayUnique()
   @IsInt({ each: true })
   categoryIds: number[];
 }
