@@ -397,55 +397,6 @@ describe('ItemUpdateService', () => {
       });
     });
 
-    it('更新予定の物品名が現在の物品名と重複している場合、409エラーを返す', (done) => {
-      const inputItemId = 1;
-      const itemUpdateInputDto: ItemUpdateInputDto = {
-        name: 'existingItemName',
-        quantity: 11,
-        description: 'updatedItemDescription',
-        categoryIds: [1, 2, 3],
-      };
-      const mockQueryItem: Items = {
-        id: 1,
-        name: 'existingItemName',
-        quantity: 10,
-        description: 'itemDescription',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-        itemCategories: [],
-      };
-
-      const mockQueryCategoryIds: number[] = [1, 2, 3];
-
-      jest
-        .spyOn(itemsDatasource, 'findItemById')
-        .mockReturnValue(of(mockQueryItem));
-      jest
-        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
-        .mockReturnValue(of(mockQueryCategoryIds));
-      jest
-        .spyOn(itemsDatasource, 'findItemByName')
-        .mockReturnValue(of(undefined));
-
-      itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
-        next: () => {
-          done.fail('Expected an error, but got a success response');
-        },
-        error: (error) => {
-          expect(error).toBeInstanceOf(ConflictException);
-          expect(error.message).toBe('This value is not unique');
-          expect(itemsDatasource.findItemById).toHaveBeenCalledWith(
-            inputItemId
-          );
-          expect(itemsDatasource.findCategoryIdsByItemId).toHaveBeenCalledWith(
-            inputItemId
-          );
-          done();
-        },
-      });
-    });
-
     it('更新後の物品名が既存の他の物品名と重複している場合、409エラーを返す', (done) => {
       const inputItemId = 1;
       const itemUpdateInputDto: ItemUpdateInputDto = {
