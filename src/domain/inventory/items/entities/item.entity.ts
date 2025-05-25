@@ -96,15 +96,6 @@ export class Item {
       return false;
     }
 
-    //変更がない場合
-    if (
-      name === this._name &&
-      quantity === this._quantity &&
-      description === this._description
-    ) {
-      return false;
-    }
-
     //値オブジェクトを使ったビジネスロジックのチェック
     try {
       Quantity.of(quantity);
@@ -147,11 +138,20 @@ export class Item {
       return null;
     }
 
-    const { addCategoryIds: addIds, deleteCategoryIds: deleteIds } =
-      currentItem.getCategoryDiff(categoryIds);
-    if (addIds.length === 0 && deleteIds.length === 0) {
+    // すべての値が同じ場合（カテゴリも含めて）だけnullを返す
+    const isNameSame = name === currentItem._name;
+    const isQuantitySame = quantity === currentItem._quantity;
+    const isDescriptionSame = description === currentItem._description;
+    const isCategorySame =
+      currentItem._categoryIds.length === categoryIds.length &&
+      currentItem._categoryIds.every((id, idx) => id === categoryIds[idx]);
+
+    if (isNameSame && isQuantitySame && isDescriptionSame && isCategorySame) {
       return null;
     }
+
+    const { addCategoryIds: addIds, deleteCategoryIds: deleteIds } =
+      currentItem.getCategoryDiff(categoryIds);
 
     const updatedCategoryIds = [
       ...currentItem.categoryIds.filter((id) => !deleteIds.includes(id)),
