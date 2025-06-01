@@ -37,17 +37,18 @@ export class ItemDeleteService implements ItemDeleteServiceInterface {
           );
         }
 
-        //更新日と削除日が一致している場合は、409エラーを返す
-        if (item.deletedAt === item.updatedAt) {
-          throw new ConflictException(
-            `Item with ID ${itemId} is already deleted`
-          );
-        }
-
         const domainItem = ItemDomainFactory.fromInfrastructureSingle(
           item,
           categoryIds
         );
+
+        domainItem.deletedAt
+          ? (() => {
+              throw new ConflictException(
+                `Item with ID ${itemId} is already deleted`
+              );
+            })()
+          : null;
 
         const deletedItem = domainItem.delete();
         return this.itemsDatasource.deletedById(itemId).pipe(
