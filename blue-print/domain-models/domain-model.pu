@@ -36,10 +36,23 @@ class Item {
   - itemId: ID
   - name: String
   - quantity: Integer
+  - description: String
+  - category: Category
+  - status: ItemStatus
   + checkAvailability(): Boolean
-  + addItem(name: String, quantity: Integer, category: Category)
-  + editItem(newName: String, newQuantity: Integer, newCategory: Category)
-  + removeItem()
+  + create()
+  + update()
+  + delete() // 論理削除
+  + restore() // 論理削除を復元
+  + purge() // 物理削除
+  + validateUpdate(): Boolean // 更新時のバリデーション
+  + getCategoryDiff(newCategoryIds: number[]): categoryDiff) // 更新時のカテゴリ差分取得
+}
+
+enum ItemStatus {
+  AVAILABLE
+  UNAVAILABLE
+  DELETED
 }
 
 class Category {

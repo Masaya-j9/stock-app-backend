@@ -27,7 +27,7 @@ export class ItemsDatasource {
       .createQueryBuilder()
       .select('id')
       .from('items', 'items')
-      .where('items.deletedAt IS NULL')
+      .where('items.deleted_at IS NULL')
       .orderBy('items.id', 'ASC')
       .offset(pagination.offset())
       .limit(pagination.itemsPerPage());
@@ -404,7 +404,7 @@ export class ItemsDatasource {
         .select('item_categories.category.id', 'categoryId')
         .from(ItemCategories, 'item_categories')
         .where('item_categories.item.id = :itemId', { itemId })
-        .andWhere('item_categories.deletedAt IS NULL')
+        .andWhere('item_categories.deleted_at IS NULL')
         .getRawMany()
     ).pipe(map((result) => result.map((item) => item.categoryId)));
   }
@@ -493,5 +493,66 @@ export class ItemsDatasource {
         .where('items.deletedAt IS NULL')
         .getRawOne()
     ).pipe(map((result) => result.count));
+  }
+
+  /**
+   * itemテーブルに論理削除されているレコードの全件数を取得するクエリ
+   * @returns Observable<number>
+   */
+  countDeletedAll(): Observable<number> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select('COUNT(items.id)', 'count')
+        .from('items', 'items')
+        .withDeleted()
+        .where('items.deleted_at IS NOT NULL')
+        .getRawOne()
+    ).pipe(map((result) => result.count));
+  }
+
+  /**
+   * 論理削除された物品の一覧を取得するクエリ
+   * @param Pagination - ページネーションに関する値オブジェクト
+   * @param sortOrder - ソート順に関する値オブジェクト
+   * @returns Observable<Items[]>
+   */
+  findDeletedItemList(
+    pagination: Pagination,
+    sortOrder: SortOrder
+  ): Observable<Items[]> {
+    const subQueryBuilder = this.dataSource
+      .createQueryBuilder()
+      .select('items_sub.id', 'id')
+      .from('items', 'items_sub')
+      .withDeleted()
+      .where('items_sub.deleted_at IS NOT NULL')
+      .orderBy('items_sub.id', 'ASC')
+      .offset(pagination.offset())
+      .limit(pagination.itemsPerPage());
+
+    const subQuerySql = subQueryBuilder.getQuery();
+    const subQueryParams = subQueryBuilder.getParameters();
+
+    // メインクエリでもwithDeleted()を追加
+    const mainQueryBuilder = this.dataSource
+      .createQueryBuilder()
+      .select([
+        'items.id AS id',
+        'items.name AS name',
+        'items.quantity AS quantity',
+        'items.description AS description',
+        'items.created_at AS createdAt',
+        'items.updated_at AS updatedAt',
+        'items.deleted_at AS deletedAt',
+      ])
+      .from('items', 'items')
+      .withDeleted()
+      .innerJoin(`(${subQuerySql})`, 'sub', 'items.id = sub.id')
+      .setParameters(subQueryParams)
+      .where('items.deleted_at IS NOT NULL')
+      .orderBy('items.id', sortOrder.toQuerySort());
+
+    return from(mainQueryBuilder.getRawMany());
   }
 }
