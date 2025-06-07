@@ -15,6 +15,7 @@ import { ItemRegisterServiceInterface } from '../../../application/services/item
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
+import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
 import { Observable } from 'rxjs';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
@@ -27,6 +28,8 @@ import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.del
 import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
 import { ItemSingleInputDto } from '../../../application/dto/input/item/item.single.input.dto';
 import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
+import { DeletedItemListInputDto } from '../../../application/dto/input/item/deleted.item.list.input.dto';
+import { DeletedItemListOutputDto } from '../../../application/dto/output/item/deleted.item.list.output.dto';
 
 @ApiTags('items')
 @Controller('items')
@@ -41,7 +44,9 @@ export class ItemController {
     @Inject('ItemDeleteServiceInterface')
     private readonly ItemDeleteService: ItemDeleteServiceInterface,
     @Inject('ItemSingleServiceInterface')
-    private readonly ItemSingleService: ItemSingleServiceInterface
+    private readonly ItemSingleService: ItemSingleServiceInterface,
+    @Inject('DeletedItemListServiceInterface')
+    private readonly DeletedItemListService: DeletedItemListServiceInterface
   ) {}
 
   /**
@@ -63,6 +68,26 @@ export class ItemController {
     @Query() query: ItemListInputDto
   ): Observable<ItemListOutputDto> {
     return this.ItemListService.service(query);
+  }
+
+  /**
+   * @param query - クエリ情報
+   * @return {Observable<DeletedItemListOutputDto>} - 削除された物品の一覧情報を含むObservable
+   */
+  @ApiOperation({
+    summary: '削除された物品の一覧を返すエンドポイント',
+    description: '削除された物品の一覧を返すAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OK',
+    type: DeletedItemListOutputDto,
+  })
+  @Get('deleted')
+  findDeletedItemList(
+    @Query() query: DeletedItemListInputDto
+  ): Observable<DeletedItemListOutputDto> {
+    return this.DeletedItemListService.service(query);
   }
 
   /**
