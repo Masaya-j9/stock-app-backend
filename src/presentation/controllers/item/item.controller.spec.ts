@@ -6,10 +6,12 @@ import { ItemUpdateService } from '../../../application/services/item/item.updat
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
 import { ItemDeleteService } from '../../../application/services/item/item.delete.service';
 import { ItemSingleService } from '../../../application/services/item/item.single.service';
+import { DeletedItemListService } from '../../../application/services/item/deleted.item.list.service';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
+import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.update.input.dto';
@@ -18,6 +20,8 @@ import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.del
 import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
 import { ItemSingleInputDto } from '../../../application/dto/input/item/item.single.input.dto';
 import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
+import { DeletedItemListInputDto } from '../../../application/dto/input/item/deleted.item.list.input.dto';
+import { DeletedItemListOutputDto } from '../../../application/dto/output/item/deleted.item.list.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
@@ -36,6 +40,7 @@ describe('ItemController', () => {
   let itemUpdateService: ItemUpdateServiceInterface;
   let itemDeleteService: ItemDeleteServiceInterface;
   let itemSingleService: ItemSingleServiceInterface;
+  let deletedItemListService: DeletedItemListServiceInterface;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
 
@@ -68,6 +73,10 @@ describe('ItemController', () => {
           useClass: ItemSingleService,
         },
         {
+          provide: 'DeletedItemListServiceInterface',
+          useClass: DeletedItemListService,
+        },
+        {
           provide: ItemsDatasource,
           useValue: {
             findItemList: jest.fn(() => of([])),
@@ -79,6 +88,8 @@ describe('ItemController', () => {
             findCategoryIdsByItemId: jest.fn(() => of([])),
             updateItemWithinTransactionQuery: jest.fn(() => of({})),
             updateItemCategoriesWithinTransactionQuery: jest.fn(() => of({})),
+            countDeletedAll: jest.fn(() => of(0)),
+            findDeletedItemList: jest.fn(() => of([])),
             DataSource: {
               transaction: jest.fn((cb) => cb({})),
             },
@@ -109,6 +120,9 @@ describe('ItemController', () => {
     );
     itemSingleService = module.get<ItemSingleServiceInterface>(
       'ItemSingleServiceInterface'
+    );
+    deletedItemListService = module.get<DeletedItemListServiceInterface>(
+      'DeletedItemListServiceInterface'
     );
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
@@ -198,6 +212,137 @@ describe('ItemController', () => {
           expect(err).toBeInstanceOf(BadRequestException);
           expect(err.response.statusCode).toBe(400);
           expect(err.response.message).toBe('Validation failed');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('findDeletedItemList', () => {
+    it('削除された物品一覧を取得する', (done) => {
+      const query: DeletedItemListInputDto = { pages: 1, sortOrder: 0 };
+      const result: DeletedItemListOutputDto = {
+        count: 2,
+        totalPages: 1,
+        results: [
+          {
+            id: 1,
+            name: 'Item 1',
+            quantity: 10,
+            description: 'Description 1',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: new Date(),
+            itemsCategories: [
+              {
+                id: 1,
+                name: 'Category 1',
+                description: 'Description 1',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                deletedAt: new Date(),
+              },
+            ],
+          },
+          {
+            id: 2,
+            name: 'Item 2',
+            quantity: 20,
+            description: 'Description 2',
+            createdAt: new Date(),
+            updatedAt: new Date(),
+            deletedAt: new Date(),
+            itemsCategories: [
+              {
+                id: 2,
+                name: 'Category 2',
+                description: 'Description 2',
+                createdAt: new Date(),
+                updatedAt: new Date(),
+                deletedAt: new Date(),
+              },
+            ],
+          },
+        ],
+      };
+      jest.spyOn(deletedItemListService, 'service').mockReturnValue(of(result));
+      controller.findDeletedItemList(query).subscribe({
+        next: (response: DeletedItemListOutputDto) => {
+          expect(response).toBe(result);
+          expect(deletedItemListService.service).toHaveBeenCalledWith(query);
+        },
+        error: (err: any) => {
+          fail(err);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+    it('ページ番号が不正な値のとき、400を返す', (done) => {
+      const query: DeletedItemListInputDto = { pages: -1, sortOrder: 0 };
+      jest
+        .spyOn(deletedItemListService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new BadRequestException('Validation failed'))
+        );
+      controller.findDeletedItemList(query).subscribe({
+        next: () => {
+          fail('Expected 400 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(BadRequestException);
+          expect(err.response.statusCode).toBe(400);
+          expect(err.response.message).toBe('Validation failed');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('sortOrderが不正な値の場合、400を返す', (done) => {
+      const query: DeletedItemListInputDto = { pages: 1, sortOrder: 3 };
+      jest
+        .spyOn(deletedItemListService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new BadRequestException('Validation failed'))
+        );
+      controller.findDeletedItemList(query).subscribe({
+        next: () => {
+          fail('Expected 400 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(BadRequestException);
+          expect(err.response.statusCode).toBe(400);
+          expect(err.response.message).toBe('Validation failed');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('削除された物品が存在しない場合、404エラーを返す', (done) => {
+      const query: DeletedItemListInputDto = { pages: 1, sortOrder: 0 };
+      jest
+        .spyOn(deletedItemListService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Items not found'))
+        );
+      controller.findDeletedItemList(query).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Items not found');
           done();
         },
         complete: () => {
