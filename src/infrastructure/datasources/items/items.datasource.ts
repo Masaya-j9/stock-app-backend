@@ -555,4 +555,54 @@ export class ItemsDatasource {
 
     return from(mainQueryBuilder.getRawMany());
   }
+
+  /**
+   * 物品IDから論理削除された物品を取得するクエリ
+   * @param id - 物品ID
+   * @returns Observable<Items | undefined>
+   */
+  findDeletedItemById(id: number): Observable<Items | undefined> {
+    return from(
+      this.dataSource
+        .getRepository(Items)
+        .createQueryBuilder('items')
+        .withDeleted()
+        .where('items.id = :id', { id })
+        .getOne()
+    );
+  }
+
+  /**
+   * 論理削除された物品を復元するクエリ
+   * @param id - 物品ID
+   * @return Observable<Items>
+   */
+  //トランザクション処理で実施
+  restoreDeletedItemById(
+    id: number,
+    transactionalEntityManager: EntityManager
+  ): Observable<Partial<Items>> {
+    return from(
+      transactionalEntityManager
+        .createQueryBuilder()
+        .update(Items)
+        .set({
+          updatedAt: new Date(),
+          deletedAt: null,
+        })
+        .where('id = :id', { id })
+        .execute()
+    ).pipe(
+      map((result) => {
+        if (result.affected === 0) {
+          throw new Error('復元された行がありません');
+        }
+        return {
+          id,
+          updatedAt: new Date(),
+          deletedAt: null,
+        };
+      })
+    );
+  }
 }
