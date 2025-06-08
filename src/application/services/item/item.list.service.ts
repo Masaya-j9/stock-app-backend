@@ -27,12 +27,9 @@ export class ItemListService implements ItemListServiceInterface {
    * @throws {HttpException} 物品が見つからない場合、404エラーをスローします。
    */
   service(input: ItemListInputDto): Observable<ItemListOutputDto> {
-    const pages = Pagination.of(input.pages);
+    const pagination = Pagination.of(input.pages);
     const sortOrder = SortOrder.of(input.sortOrder);
-    return this.ItemsDatasource.findItemList(
-      pages.value(),
-      sortOrder.value()
-    ).pipe(
+    return this.ItemsDatasource.findItemList(pagination, sortOrder).pipe(
       switchMap((items) => {
         if (items.length === 0) {
           return throwError(() => new NotFoundException('Items not found'));
@@ -56,7 +53,7 @@ export class ItemListService implements ItemListServiceInterface {
         return new ItemListOutputBuilder(
           domainItems,
           totalCount,
-          pages.calcTotalPages(totalItemCount),
+          pagination.calcTotalPages(totalItemCount),
           domainCategories
         ).build();
       })
