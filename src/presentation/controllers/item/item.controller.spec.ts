@@ -7,11 +7,13 @@ import { ItemListServiceInterface } from '../../../application/services/item/ite
 import { ItemDeleteService } from '../../../application/services/item/item.delete.service';
 import { ItemSingleService } from '../../../application/services/item/item.single.service';
 import { DeletedItemListService } from '../../../application/services/item/deleted.item.list.service';
+import { ItemRestoreService } from '../../../application/services/item/item.restore.service';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
+import { ItemRestoreServiceInterface } from '../../../application/services/item/item.restore.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.update.input.dto';
@@ -22,6 +24,8 @@ import { ItemSingleInputDto } from '../../../application/dto/input/item/item.sin
 import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
 import { DeletedItemListInputDto } from '../../../application/dto/input/item/deleted.item.list.input.dto';
 import { DeletedItemListOutputDto } from '../../../application/dto/output/item/deleted.item.list.output.dto';
+import { ItemRestoreInputDto } from '../../../application/dto/input/item/item.restore.input.dto';
+import { ItemRestoreOutputDto } from '../../../application/dto/output/item/item.restore.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
@@ -41,6 +45,7 @@ describe('ItemController', () => {
   let itemDeleteService: ItemDeleteServiceInterface;
   let itemSingleService: ItemSingleServiceInterface;
   let deletedItemListService: DeletedItemListServiceInterface;
+  let itemRestoreService: ItemRestoreServiceInterface;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
 
@@ -52,6 +57,9 @@ describe('ItemController', () => {
         ItemRegisterService,
         ItemUpdateService,
         ItemDeleteService,
+        ItemSingleService,
+        DeletedItemListService,
+        ItemRestoreService,
         {
           provide: 'ItemListServiceInterface',
           useClass: ItemListService, // インターフェースを実装するクラスを提供
@@ -75,6 +83,10 @@ describe('ItemController', () => {
         {
           provide: 'DeletedItemListServiceInterface',
           useClass: DeletedItemListService,
+        },
+        {
+          provide: 'ItemRestoreServiceInterface',
+          useClass: ItemRestoreService,
         },
         {
           provide: ItemsDatasource,
@@ -123,6 +135,9 @@ describe('ItemController', () => {
     );
     deletedItemListService = module.get<DeletedItemListServiceInterface>(
       'DeletedItemListServiceInterface'
+    );
+    itemRestoreService = module.get<ItemRestoreServiceInterface>(
+      'ItemRestoreServiceInterface'
     );
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
@@ -343,6 +358,154 @@ describe('ItemController', () => {
           expect(err).toBeInstanceOf(NotFoundException);
           expect(err.response.statusCode).toBe(404);
           expect(err.response.message).toBe('Items not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('restoreDeletedItem', () => {
+    //item.restore.serviceのテスト
+    it('物品を復元できる', (done) => {
+      const input: ItemRestoreInputDto = { id: 1 };
+      const mockItem: ItemRestoreOutputDto = {
+        id: 1,
+        name: 'Restored Item',
+        quantity: 10,
+        description: 'Restored Description',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+      };
+
+      jest.spyOn(itemRestoreService, 'service').mockReturnValue(of(mockItem));
+
+      controller.restoreDeletedItem(input.id).subscribe({
+        next: (response) => {
+          expect(response).toEqual(mockItem);
+          expect(itemRestoreService.service).toHaveBeenCalledWith(input);
+        },
+        error: (err) => {
+          fail(err);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品が存在しない場合、404を返す', (done) => {
+      const input = { id: 1 };
+      jest
+        .spyOn(itemRestoreService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Item not found'))
+        );
+      controller.restoreDeletedItem(input.id).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Item not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品のカテゴリが見つからない場合、404を返す', (done) => {
+      const input = { id: 1 };
+      jest
+        .spyOn(itemRestoreService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Category not found'))
+        );
+      controller.restoreDeletedItem(input.id).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Category not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDが不正な場合、400を返す', (done) => {
+      const input = { id: 1 };
+      jest
+        .spyOn(itemRestoreService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new BadRequestException('Validation failed'))
+        );
+      controller.restoreDeletedItem(input.id).subscribe({
+        next: () => {
+          fail('Expected 400 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(BadRequestException);
+          expect(err.response.statusCode).toBe(400);
+          expect(err.response.message).toBe('Validation failed');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品が削除されていない場合、409を返す', (done) => {
+      const input = { id: 1 };
+      jest
+        .spyOn(itemRestoreService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new ConflictException('Item is not deleted'))
+        );
+      controller.restoreDeletedItem(input.id).subscribe({
+        next: () => {
+          fail('Expected 409 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(ConflictException);
+          expect(err.response.statusCode).toBe(409);
+          expect(err.response.message).toBe('Item is not deleted');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('トランザクション中にエラーが発生した場合、500を返す', (done) => {
+      const input = { id: 1 };
+      jest
+        .spyOn(itemRestoreService, 'service')
+        .mockImplementation(() =>
+          throwError(
+            () => new InternalServerErrorException('Transaction failed')
+          )
+        );
+      controller.restoreDeletedItem(input.id).subscribe({
+        next: () => {
+          fail('Expected 500 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(InternalServerErrorException);
+          expect(err.response.statusCode).toBe(500);
+          expect(err.response.message).toBe('Transaction failed');
           done();
         },
         complete: () => {
