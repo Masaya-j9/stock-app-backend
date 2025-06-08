@@ -19,10 +19,10 @@ export class ItemsDatasource {
    * @return {Observable<ItemListOutputDto>} - 登録されている物品の一覧情報
    *
    */
-  findItemList(page: number, sortOrderNumber: number): Observable<Items[]> {
-    const pagination = Pagination.of(page);
-    const sortOrder = SortOrder.of(sortOrderNumber);
-
+  findItemList(
+    pagination: Pagination,
+    sortOrder: SortOrder
+  ): Observable<Items[]> {
     const subQuery = this.dataSource
       .createQueryBuilder()
       .select('id')
