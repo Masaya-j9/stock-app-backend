@@ -32,7 +32,7 @@ http://localhost:15672/
 ### ユースケースについて
 ![ユースケース図について](assets/usecase-diagram.png)
 ### ドメインモデルについて
-![ドメインモデル図について](assets/domain-models/20250216145938-domain-model.png)
+![ドメインモデル図について](assets/domain-models/20250608211700-domain-model.png)
 ### データベース設計について
 ![ER図について](assets/relations/20250103163134-relations.png)
 
@@ -53,9 +53,9 @@ chmod +x blue-print/shells/diagram.sh
 2. README.mdのパスを張り替える
 
 ```
-chmod +x blue-print/shells/doomain-model.sh
+chmod +x blue-print/shells/domain-model.sh
 
-./blue-print/shells/doomain-model.sh
+./blue-print/shells/domain-model.sh
 ```
 
 
