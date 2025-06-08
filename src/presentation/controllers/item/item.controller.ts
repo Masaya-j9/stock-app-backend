@@ -16,6 +16,7 @@ import { ItemUpdateServiceInterface } from '../../../application/services/item/i
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
+import { ItemRestoreServiceInterface } from '../../../application/services/item/item.restore.interface';
 import { Observable } from 'rxjs';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
@@ -30,6 +31,8 @@ import { ItemSingleInputDto } from '../../../application/dto/input/item/item.sin
 import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
 import { DeletedItemListInputDto } from '../../../application/dto/input/item/deleted.item.list.input.dto';
 import { DeletedItemListOutputDto } from '../../../application/dto/output/item/deleted.item.list.output.dto';
+import { ItemRestoreInputDto } from '../../../application/dto/input/item/item.restore.input.dto';
+import { ItemRestoreOutputDto } from '../../../application/dto/output/item/item.restore.output.dto';
 
 @ApiTags('items')
 @Controller('items')
@@ -46,7 +49,9 @@ export class ItemController {
     @Inject('ItemSingleServiceInterface')
     private readonly ItemSingleService: ItemSingleServiceInterface,
     @Inject('DeletedItemListServiceInterface')
-    private readonly DeletedItemListService: DeletedItemListServiceInterface
+    private readonly DeletedItemListService: DeletedItemListServiceInterface,
+    @Inject('ItemRestoreServiceInterface')
+    private readonly ItemRestoreService: ItemRestoreServiceInterface
   ) {}
 
   /**
@@ -88,6 +93,27 @@ export class ItemController {
     @Query() query: DeletedItemListInputDto
   ): Observable<DeletedItemListOutputDto> {
     return this.DeletedItemListService.service(query);
+  }
+
+  /**
+   * @param request - リクエスト情報
+   * @return {Observable<ItemRestoreOutputDto>} - 復元された物品情報を含むObservable
+   */
+  @ApiOperation({
+    summary: '削除された物品を復元するエンドポイント',
+    description: '削除された物品を復元するAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Restored',
+    type: ItemRestoreOutputDto,
+  })
+  @Patch('restore/:item_id')
+  restoreDeletedItem(
+    @Param('item_id', ParseIntPipe) id: number
+  ): Observable<ItemRestoreOutputDto> {
+    const request: ItemRestoreInputDto = { id };
+    return this.ItemRestoreService.service(request);
   }
 
   /**
