@@ -182,4 +182,17 @@ export class Item {
       this._categoryIds
     );
   }
+
+  restore(): Item {
+    return new Item(
+      this._id,
+      this._name,
+      this._quantity,
+      this._description,
+      this._createdAt,
+      new Date(),
+      null,
+      this._categoryIds
+    );
+  }
 }
