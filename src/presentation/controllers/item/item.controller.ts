@@ -10,15 +10,16 @@ import {
   Param,
   ParseIntPipe,
 } from '@nestjs/common';
+import { Observable } from 'rxjs';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemListServiceInterface } from '../../../application/services/item/item.list.interface';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
+import { DeletedItemSingleServiceInterface } from '../../../application/services/item/deleted.item.single.interface';
 import { ItemRestoreServiceInterface } from '../../../application/services/item/item.restore.interface';
-import { Observable } from 'rxjs';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemRegisterInputDto } from '../../../application/dto/input/item/item.register.input.dto';
@@ -31,6 +32,8 @@ import { ItemSingleInputDto } from '../../../application/dto/input/item/item.sin
 import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
 import { DeletedItemListInputDto } from '../../../application/dto/input/item/deleted.item.list.input.dto';
 import { DeletedItemListOutputDto } from '../../../application/dto/output/item/deleted.item.list.output.dto';
+import { DeletedItemSingleInputDto } from '../../../application/dto/input/item/deleted.item.single.input.dto';
+import { DeletedItemSingleOutputDto } from '../../../application/dto/output/item/deleted.item.single.output.dto';
 import { ItemRestoreInputDto } from '../../../application/dto/input/item/item.restore.input.dto';
 import { ItemRestoreOutputDto } from '../../../application/dto/output/item/item.restore.output.dto';
 
@@ -50,6 +53,8 @@ export class ItemController {
     private readonly ItemSingleService: ItemSingleServiceInterface,
     @Inject('DeletedItemListServiceInterface')
     private readonly DeletedItemListService: DeletedItemListServiceInterface,
+    @Inject('DeletedItemSingleServiceInterface')
+    private readonly DeletedItemSingleService: DeletedItemSingleServiceInterface,
     @Inject('ItemRestoreServiceInterface')
     private readonly ItemRestoreService: ItemRestoreServiceInterface
   ) {}
@@ -93,6 +98,27 @@ export class ItemController {
     @Query() query: DeletedItemListInputDto
   ): Observable<DeletedItemListOutputDto> {
     return this.DeletedItemListService.service(query);
+  }
+
+  /**
+   * @param request - リクエスト情報
+   * @return {Observable<DeletedItemSingleOutputDto>} - 削除された物品の個別情報を含むObservable
+   */
+  @ApiOperation({
+    summary: '削除された物品の個別情報を返すエンドポイント',
+    description: '削除された物品の個別情報を返すAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'OK',
+    type: DeletedItemSingleOutputDto,
+  })
+  @Get('deleted/:item_id')
+  findDeletedItemSingle(
+    @Param('item_id', ParseIntPipe) id: number
+  ): Observable<DeletedItemSingleOutputDto> {
+    const request: DeletedItemSingleInputDto = { id };
+    return this.DeletedItemSingleService.service(request);
   }
 
   /**
