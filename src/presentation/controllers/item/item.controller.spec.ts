@@ -7,10 +7,12 @@ import { ItemListServiceInterface } from '../../../application/services/item/ite
 import { ItemDeleteService } from '../../../application/services/item/item.delete.service';
 import { ItemSingleService } from '../../../application/services/item/item.single.service';
 import { DeletedItemListService } from '../../../application/services/item/deleted.item.list.service';
+import { DeletedItemSingleService } from '../../../application/services/item/deleted.item.single.service';
 import { ItemRestoreService } from '../../../application/services/item/item.restore.service';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
 import { ItemDeleteServiceInterface } from '../../../application/services/item/item.delete.interface';
+import { DeletedItemSingleServiceInterface } from '../../../application/services/item/deleted.item.single.interface';
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
 import { ItemRestoreServiceInterface } from '../../../application/services/item/item.restore.interface';
@@ -20,6 +22,8 @@ import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.upd
 import { ItemUpdateOutputDto } from '../../../application/dto/output/item/item.update.output.dto';
 import { ItemDeleteInputDto } from '../../../application/dto/input/item/item.delete.input.dto';
 import { ItemDeleteOutputDto } from '../../../application/dto/output/item/item.delete.output.dto';
+import { DeletedItemSingleInputDto } from '../../../application/dto/input/item/deleted.item.single.input.dto';
+import { DeletedItemSingleOutputDto } from '../../../application/dto/output/item/deleted.item.single.output.dto';
 import { ItemSingleInputDto } from '../../../application/dto/input/item/item.single.input.dto';
 import { ItemSingleOutputDto } from '../../../application/dto/output/item/item.single.output.dto';
 import { DeletedItemListInputDto } from '../../../application/dto/input/item/deleted.item.list.input.dto';
@@ -45,6 +49,7 @@ describe('ItemController', () => {
   let itemDeleteService: ItemDeleteServiceInterface;
   let itemSingleService: ItemSingleServiceInterface;
   let deletedItemListService: DeletedItemListServiceInterface;
+  let deletedItemSingleService: DeletedItemSingleServiceInterface;
   let itemRestoreService: ItemRestoreServiceInterface;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
@@ -77,6 +82,10 @@ describe('ItemController', () => {
           useClass: ItemDeleteService,
         },
         {
+          provide: 'DeletedItemSingleServiceInterface',
+          useClass: DeletedItemSingleService,
+        },
+        {
           provide: 'ItemSingleServiceInterface',
           useClass: ItemSingleService,
         },
@@ -102,6 +111,7 @@ describe('ItemController', () => {
             updateItemCategoriesWithinTransactionQuery: jest.fn(() => of({})),
             countDeletedAll: jest.fn(() => of(0)),
             findDeletedItemList: jest.fn(() => of([])),
+            findDeletedItemById: jest.fn(() => of({})),
             DataSource: {
               transaction: jest.fn((cb) => cb({})),
             },
@@ -135,6 +145,9 @@ describe('ItemController', () => {
     );
     deletedItemListService = module.get<DeletedItemListServiceInterface>(
       'DeletedItemListServiceInterface'
+    );
+    deletedItemSingleService = module.get<DeletedItemSingleServiceInterface>(
+      'DeletedItemSingleServiceInterface'
     );
     itemRestoreService = module.get<ItemRestoreServiceInterface>(
       'ItemRestoreServiceInterface'
@@ -358,6 +371,92 @@ describe('ItemController', () => {
           expect(err).toBeInstanceOf(NotFoundException);
           expect(err.response.statusCode).toBe(404);
           expect(err.response.message).toBe('Items not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('DeletedItemSingleService', () => {
+    it('論理削除された物品を1件取得できる', (done) => {
+      const input: DeletedItemSingleInputDto = { id: 1 };
+      const mockItem: DeletedItemSingleOutputDto = {
+        id: 1,
+        name: 'Item 1',
+        quantity: 10,
+        description: 'Description 1',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: new Date(),
+        itemCategories: [
+          {
+            id: 1,
+            name: 'Category 1',
+            description: 'Description 1',
+          },
+        ],
+      };
+
+      jest
+        .spyOn(deletedItemSingleService, 'service')
+        .mockReturnValue(of(mockItem));
+
+      controller.findDeletedItemSingle(input.id).subscribe({
+        next: (response) => {
+          expect(response).toEqual(mockItem);
+          expect(deletedItemSingleService.service).toHaveBeenCalledWith(input);
+        },
+        error: (err) => {
+          fail(err);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('論理削除された物品が存在しない場合、404エラーを返す', (done) => {
+      const input: DeletedItemSingleInputDto = { id: 1 };
+      jest
+        .spyOn(deletedItemSingleService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Item not found'))
+        );
+
+      controller.findDeletedItemSingle(input.id).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Item not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('論理削除された物品IDが不正な場合、400エラーを返す', (done) => {
+      const input: DeletedItemSingleInputDto = { id: -1 };
+      jest
+        .spyOn(deletedItemSingleService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new BadRequestException('Validation failed'))
+        );
+      controller.findDeletedItemSingle(input.id).subscribe({
+        next: () => {
+          fail('Expected 400 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(BadRequestException);
+          expect(err.response.statusCode).toBe(400);
+          expect(err.response.message).toBe('Validation failed');
           done();
         },
         complete: () => {
