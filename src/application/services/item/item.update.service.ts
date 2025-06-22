@@ -13,7 +13,11 @@ import {
   throwError,
   map,
   Subscriber,
+  filter,
+  defaultIfEmpty,
+  mergeMap,
   of,
+  iif,
 } from 'rxjs';
 import { ItemUpdateServiceInterface } from './item.update.interface';
 import { ItemUpdateInputDto } from '../../dto/input/item/item.update.input.dto';
@@ -30,6 +34,11 @@ import { categoryDiff } from '../../../domain/inventory/items/types/category.dif
 import { Unique } from '../../../domain/common/value-objects/unique';
 import { TextAmount } from '../../../domain/inventory/items/value-objects/text.amount';
 import { Quantity } from '../../../domain/inventory/items/value-objects/quantity';
+import {
+  ItemNotFoundOperator,
+  CategoryIdsNotFoundOperator,
+  ItemNameUniqueOperator,
+} from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class ItemUpdateService implements ItemUpdateServiceInterface {
@@ -56,38 +65,37 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
 
     this.logger.log(`Starting update for item with ID: ${itemId}`);
     return forkJoin([
-      this.itemsDatasource.findItemById(itemId),
-      this.itemsDatasource.findCategoryIdsByItemId(itemId),
-      this.itemsDatasource.findItemByName(name.value()),
+      this.itemsDatasource
+        .findItemById(itemId)
+        .pipe(
+          this.throwIfItemNotFound(),
+          this.throwIfItemNameUnique(name.value(), itemId)
+        ),
+      this.itemsDatasource
+        .findCategoryIdsByItemId(itemId)
+        .pipe(this.throwIfCategoryIdsNotFound()),
     ]).pipe(
-      switchMap(([items, currentCategoryIds, conflictItem]) => {
-        this.validateItemFound(items);
-        this.validateCategoryIdsFound(currentCategoryIds);
-
-        // conflictItemが存在し、かつ自分自身でない場合のみ重複チェック
-        if (conflictItem && conflictItem.id !== items.id) {
-          this.validateUniqueOtherItem(name, conflictItem.name);
-        }
-
-        // 現在のDBにあるItemの情報
+      switchMap(([items, currentCategoryIds]) => {
         const domainItem: Item = ItemDomainFactory.fromInfrastructureSingle(
           items,
           currentCategoryIds
         );
-
-        // カテゴリの差分を取得
-        const categoryDiffResult = domainItem.getCategoryDiff(categoryIds);
-        if (!categoryDiffResult) {
-          return throwError(
-            () =>
-              new InternalServerErrorException(
-                'Failed to calculate category differences'
-              )
-          );
-        }
+        return of(domainItem.getCategoryDiff(categoryIds)).pipe(
+          mergeMap((categoryDiffResult) =>
+            categoryDiffResult
+              ? of({ domainItem, categoryDiffResult })
+              : throwError(
+                  () =>
+                    new InternalServerErrorException(
+                      'Failed to calculate category differences'
+                    )
+                )
+          )
+        );
+      }),
+      switchMap(({ domainItem, categoryDiffResult }) => {
         const { addCategoryIds, deleteCategoryIds }: categoryDiff =
           categoryDiffResult;
-
         // ドメインエンティティを更新
         const updatedDomainItem = this.tryUpdateDomainItem(
           domainItem,
@@ -96,7 +104,6 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
           description.value(),
           categoryIds
         );
-
         // トランザクション処理をsubscriber内で行う
         return new Observable<ItemUpdateOutputDto>((subscriber) => {
           this.itemsDatasource.dataSource.manager
@@ -135,35 +142,53 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
     );
   }
 
-  //物品の存在チェック
-  private validateItemFound(items: Items | null): Observable<void> {
-    if (items === null) {
-      return throwError(() => new NotFoundException('Item not found'));
-    }
-    return of(undefined);
-  }
+  private throwIfItemNotFound = (): ItemNotFoundOperator => (source$) =>
+    source$.pipe(
+      filter((item: Items | null): item is Items => !!item),
+      defaultIfEmpty(null),
+      mergeMap((item) =>
+        item
+          ? [item]
+          : throwError(() => new NotFoundException('Item not found'))
+      )
+    );
 
-  //カテゴリIDがDBに存在するかチェック
-  private validateCategoryIdsFound(categoryIds: number[]): Observable<void> {
-    if (!categoryIds) {
-      return throwError(() => new NotFoundException('Category IDs not found'));
-    }
-    return of(undefined);
-  }
-
-  //更新後の物品名と他の物品名との重複チェック
-  private validateUniqueOtherItem(
-    name: TextAmount,
-    otherItemName: string | undefined
-  ): Observable<void> {
-    const uniqueItemName = Unique.of(name.value(), otherItemName);
-    if (uniqueItemName.isDuplicate(otherItemName)) {
-      return throwError(
-        () => new ConflictException('This value is not unique')
+  private throwIfCategoryIdsNotFound =
+    (): CategoryIdsNotFoundOperator => (source$) =>
+      source$.pipe(
+        filter(
+          (categoryIds: number[] | undefined): categoryIds is number[] =>
+            !!categoryIds && categoryIds.length > 0
+        ),
+        defaultIfEmpty(undefined),
+        mergeMap((categoryIds) =>
+          categoryIds
+            ? [categoryIds]
+            : throwError(() => new NotFoundException('Category IDs not found'))
+        )
       );
-    }
-    return of(undefined);
-  }
+
+  private throwIfItemNameUnique =
+    (name: string, itemId: number): ItemNameUniqueOperator =>
+    (source$) =>
+      source$.pipe(
+        filter((conflictItem: Items | undefined) => {
+          // 自分自身でない場合のみ重複チェック
+          const isNotSelf = !conflictItem || conflictItem.id === itemId;
+          const isUnique =
+            !conflictItem ||
+            !Unique.of(name, conflictItem.name).isDuplicate(conflictItem.name);
+          return isNotSelf || isUnique;
+        }),
+        defaultIfEmpty(undefined),
+        mergeMap((conflictItem) =>
+          conflictItem
+            ? [conflictItem]
+            : throwError(
+                () => new ConflictException('This value is not unique')
+              )
+        )
+      );
 
   private emitItemUpdate(
     subscriber: Subscriber<ItemUpdateOutputDto>,
@@ -182,7 +207,7 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
     subscriber.complete();
   }
 
-  tryUpdateDomainItem(
+  private tryUpdateDomainItem(
     domainItem: Item,
     name: string,
     quantity: number,
@@ -196,12 +221,11 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
       description,
       categoryIds
     );
-
-    if (!updatedDomainItem) {
-      throw new BadRequestException('Invalid update parameters');
-    }
-
-    return updatedDomainItem;
+    return updatedDomainItem
+      ? updatedDomainItem
+      : (() => {
+          throw new BadRequestException('Invalid update parameters');
+        })();
   }
 
   private updateItemWithinTransaction(
@@ -211,7 +235,6 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
     transactionalEntityManager
   ): Observable<ItemUpdateOutputDto> {
     return new Observable<ItemUpdateOutputDto>((subscriber) => {
-      // アイテムの更新
       this.itemsDatasource
         .updateItemWithinTransactionQuery(
           updatedDomainItem.id,
@@ -221,15 +244,11 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
           transactionalEntityManager
         )
         .pipe(
-          switchMap((updatedItem) => {
-            if (!updatedItem) {
-              return throwError(
-                () => new InternalServerErrorException('Failed to update item')
-              );
-            }
-            // カテゴリの追加・削除処理
-            if (addIds.length > 0 || deleteIds.length > 0) {
-              return this.itemsDatasource
+          this.throwIfUpdateItemFailed(),
+          switchMap(() => {
+            return iif(
+              () => addIds.length > 0 || deleteIds.length > 0,
+              this.itemsDatasource
                 .updateItemCategoriesWithinTransactionQuery(
                   updatedDomainItem.id,
                   addIds,
@@ -237,30 +256,47 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
                   transactionalEntityManager
                 )
                 .pipe(
-                  switchMap(({ categoryIds }) => {
-                    // カテゴリIDからカテゴリ情報を取得
-                    return this.categoriesDatasource
-                      .findByCategoryIds(categoryIds)
-                      .pipe(
-                        map((updatedCategories) => {
-                          this.emitItemUpdate(
-                            subscriber,
-                            updatedDomainItem,
-                            updatedCategories
-                          );
-                        })
-                      );
-                  })
-                );
-            } else {
-              this.emitItemUpdate(subscriber, updatedDomainItem, []);
-            }
-            this.logger.log('Item updated successfully');
+                  switchMap(
+                    this.emitItemUpdateWithCategories(
+                      subscriber,
+                      updatedDomainItem
+                    )
+                  )
+                ),
+              of(null).pipe(
+                map(() => {
+                  this.emitItemUpdate(subscriber, updatedDomainItem, []);
+                })
+              )
+            );
           })
         )
         .subscribe({
           error: (err) => subscriber.error(err),
         });
     });
+  }
+
+  private throwIfUpdateItemFailed = () => (source$) =>
+    source$.pipe(
+      mergeMap((updatedItem) =>
+        updatedItem
+          ? of(updatedItem)
+          : throwError(
+              () => new InternalServerErrorException('Failed to update item')
+            )
+      )
+    );
+
+  private emitItemUpdateWithCategories(
+    subscriber: Subscriber<ItemUpdateOutputDto>,
+    updatedDomainItem: Item
+  ) {
+    return ({ categoryIds }: { categoryIds: number[] }) =>
+      this.categoriesDatasource.findByCategoryIds(categoryIds).pipe(
+        map((updatedCategories) => {
+          this.emitItemUpdate(subscriber, updatedDomainItem, updatedCategories);
+        })
+      );
   }
 }

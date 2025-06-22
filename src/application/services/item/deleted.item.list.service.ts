@@ -10,6 +10,7 @@ import { ItemDomainFactory } from '../../../domain/inventory/items/factories/ite
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
+import { ItemListNotFoundOperator } from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class DeletedItemListService implements DeletedItemListServiceInterface {
@@ -34,10 +35,8 @@ export class DeletedItemListService implements DeletedItemListServiceInterface {
     const sortOrder = SortOrder.of(input.sortOrder);
 
     return this.ItemsDatasource.findDeletedItemList(pagination, sortOrder).pipe(
+      this.throwIfItemListNotFound(),
       switchMap((deletedItems) => {
-        if (deletedItems.length === 0) {
-          return throwError(() => new NotFoundException('Items not found'));
-        }
         const itemIds = deletedItems.map((item) => item.id);
         return forkJoin([
           this.categoriesDatasource.findByCategories(itemIds),
@@ -64,5 +63,17 @@ export class DeletedItemListService implements DeletedItemListServiceInterface {
         }
       )
     );
+  }
+
+  private throwIfItemListNotFound(): ItemListNotFoundOperator {
+    return (source$) =>
+      source$.pipe(
+        map((items) => items ?? []),
+        switchMap((items) =>
+          items.length === 0
+            ? throwError(() => new NotFoundException('Items not found'))
+            : of(items)
+        )
+      );
   }
 }

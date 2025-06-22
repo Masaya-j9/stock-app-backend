@@ -288,7 +288,7 @@ describe('ItemRegisterService', () => {
         .spyOn(categoriesDatasource, 'findByCategoryIds')
         .mockReturnValue(of(mockCategories));
 
-      itemRegisterService.checkCategoriesExist(categoryIds).subscribe({
+      (itemRegisterService as any).checkCategoriesExist(categoryIds).subscribe({
         next: (result) => {
           expect(result).toHaveLength(2);
           expect(result[0].id).toBe(1);
@@ -321,7 +321,7 @@ describe('ItemRegisterService', () => {
         .spyOn(categoriesDatasource, 'findByCategoryIds')
         .mockReturnValue(of(mockCategories));
 
-      itemRegisterService.checkCategoriesExist(categoryIds).subscribe({
+      (itemRegisterService as any).checkCategoriesExist(categoryIds).subscribe({
         next: () => {
           done.fail('Expected error, but got success');
         },
@@ -385,7 +385,7 @@ describe('ItemRegisterService', () => {
         .mockReturnValue(of({ ids: [1, 2] }));
       jest.spyOn(logger, 'log').mockImplementation(jest.fn());
 
-      itemRegisterService
+      (itemRegisterService as any)
         .registerItemWithinTransaction(
           name,
           quantity,
@@ -450,7 +450,7 @@ describe('ItemRegisterService', () => {
         .mockReturnValue(of(undefined));
       jest.spyOn(logger, 'error').mockImplementation(jest.fn());
 
-      itemRegisterService
+      (itemRegisterService as any)
         .registerItemWithinTransaction(
           name,
           quantity,
