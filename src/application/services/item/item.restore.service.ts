@@ -6,6 +6,9 @@ import {
   from,
   catchError,
   throwError,
+  filter,
+  defaultIfEmpty,
+  mergeMap,
 } from 'rxjs';
 import {
   Injectable,
@@ -21,6 +24,10 @@ import { ItemsDatasource } from '../../../infrastructure/datasources/items/items
 import { ItemRestoreOutputBuilder } from '../../dto/output/item/item.restore.output.builder';
 import { ItemDomainFactory } from '../../../domain/inventory/items/factories/item.domain.factory';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
+import {
+  ItemNotFoundOperator,
+  CategoryIdsNotFoundOperator,
+} from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class ItemRestoreService implements ItemRestoreServiceInterface {
@@ -45,13 +52,14 @@ export class ItemRestoreService implements ItemRestoreServiceInterface {
       switchMap(() => from(queryRunner.startTransaction())),
       switchMap(() =>
         forkJoin([
-          this.itemsDatasource.findDeletedItemById(itemId),
-          this.itemsDatasource.findCategoryIdsByItemId(itemId),
+          this.itemsDatasource
+            .findDeletedItemById(itemId)
+            .pipe(this.throwIfItemNotFound(itemId)),
+          this.itemsDatasource
+            .findCategoryIdsByItemId(itemId)
+            .pipe(this.throwIfCategoryIdsNotFound(itemId)),
         ]).pipe(
           switchMap(([item, categoryIds]) => {
-            this.ensureItemExists(item, itemId);
-            this.ensureCategoriesExist(categoryIds, itemId);
-
             const restoredItem = this.ensureItemIsDeleted(
               item,
               categoryIds
@@ -94,34 +102,37 @@ export class ItemRestoreService implements ItemRestoreServiceInterface {
     );
   }
 
-  /**
-   *
-   * @param item
-   * @param itemId
-   * @returns {void}
-   * @throws {NotFoundException} - 物品が見つからない場合にスローされます。
-   */
-  private ensureItemExists(item: Items, itemId: number): void {
-    if (!item) {
-      throw new NotFoundException(`Item with ID ${itemId} not found`);
-    }
-  }
+  private throwIfItemNotFound: (itemId: number) => ItemNotFoundOperator =
+    (itemId) => (source$) =>
+      source$.pipe(
+        filter((item) => !!item),
+        defaultIfEmpty(null),
+        mergeMap((item) =>
+          item
+            ? [item]
+            : throwError(
+                () => new NotFoundException(`Item with ID ${itemId} not found`)
+              )
+        )
+      );
 
-  /**
-   * @param categoryIds
-   * @param itemId
-   * @returns {void}
-   * @throws {NotFoundException} - カテゴリが見つからない場合にスローされます。
-   */
-  private ensureCategoriesExist(categoryIds: number[], itemId: number): void {
-    !categoryIds
-      ? (() => {
-          throw new NotFoundException(
-            `Categories not found for item with ID ${itemId}`
-          );
-        })()
-      : undefined;
-  }
+  private throwIfCategoryIdsNotFound: (
+    itemId: number
+  ) => CategoryIdsNotFoundOperator = (itemId) => (source$) =>
+    source$.pipe(
+      filter((categoryIds) => !!categoryIds),
+      defaultIfEmpty(null),
+      mergeMap((categoryIds) =>
+        categoryIds
+          ? [categoryIds]
+          : throwError(
+              () =>
+                new NotFoundException(
+                  `Categories not found for item with ID ${itemId}`
+                )
+            )
+      )
+    );
 
   /**
    * @param item

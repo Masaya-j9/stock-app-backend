@@ -3,7 +3,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { map, Observable, switchMap, forkJoin } from 'rxjs';
+import {
+  map,
+  Observable,
+  switchMap,
+  forkJoin,
+  filter,
+  defaultIfEmpty,
+  mergeMap,
+  throwError,
+} from 'rxjs';
 import { ItemDeleteInputDto } from '../../dto/input/item/item.delete.input.dto';
 import { ItemDeleteOutputDto } from '../../dto/output/item/item.delete.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
@@ -11,6 +20,10 @@ import { ItemDeleteOutputBuilder } from '../../dto/output/item/item.delete.outpu
 import { ItemDeleteServiceInterface } from './item.delete.interface';
 import { ItemDomainFactory } from '../../../domain/inventory/items/factories/item.domain.factory';
 import { Logger } from '@nestjs/common';
+import {
+  ItemNotFoundOperator,
+  CategoryIdsNotFoundOperator,
+} from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class ItemDeleteService implements ItemDeleteServiceInterface {
@@ -23,20 +36,14 @@ export class ItemDeleteService implements ItemDeleteServiceInterface {
 
     this.logger.log(`Starting delete for item with ID: ${itemId}`);
     return forkJoin([
-      this.itemsDatasource.findItemById(itemId),
-      this.itemsDatasource.findCategoryIdsByItemId(itemId),
+      this.itemsDatasource
+        .findItemById(itemId)
+        .pipe(this.throwIfItemNotFound(itemId)),
+      this.itemsDatasource
+        .findCategoryIdsByItemId(itemId)
+        .pipe(this.throwIfCategoryIdsNotFound(itemId)),
     ]).pipe(
       switchMap(([item, categoryIds]) => {
-        if (!item) {
-          throw new NotFoundException(`Item with ID ${itemId} not found`);
-        }
-
-        if (!categoryIds) {
-          throw new NotFoundException(
-            `Categories not found for item with ID ${itemId}`
-          );
-        }
-
         const domainItem = ItemDomainFactory.fromInfrastructureSingle(
           item,
           categoryIds
@@ -68,4 +75,36 @@ export class ItemDeleteService implements ItemDeleteServiceInterface {
       })
     );
   }
+
+  private throwIfItemNotFound: (itemId: number) => ItemNotFoundOperator =
+    (itemId) => (source$) =>
+      source$.pipe(
+        filter((item) => !!item),
+        defaultIfEmpty(null),
+        mergeMap((item) =>
+          item
+            ? [item]
+            : throwError(
+                () => new NotFoundException(`Item with ID ${itemId} not found`)
+              )
+        )
+      );
+
+  private throwIfCategoryIdsNotFound: (
+    itemId: number
+  ) => CategoryIdsNotFoundOperator = (itemId) => (source$) =>
+    source$.pipe(
+      filter((categoryIds) => !!categoryIds),
+      defaultIfEmpty(null),
+      mergeMap((categoryIds) =>
+        categoryIds
+          ? [categoryIds]
+          : throwError(
+              () =>
+                new NotFoundException(
+                  `Categories not found for item with ID ${itemId}`
+                )
+            )
+      )
+    );
 }

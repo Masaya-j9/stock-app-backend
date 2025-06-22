@@ -1,15 +1,31 @@
+import {
+  map,
+  Observable,
+  switchMap,
+  of,
+  forkJoin,
+  filter,
+  defaultIfEmpty,
+  mergeMap,
+  throwError,
+} from 'rxjs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ItemListServiceInterface } from './item.list.interface';
-import { map, Observable, switchMap, of, forkJoin, throwError } from 'rxjs';
 import { ItemListInputDto } from '../../dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../dto/output/item/item.list.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { ItemListOutputBuilder } from '../../dto/output/item/item.list.output.builder';
+import { Items } from '../../../infrastructure/orm/entities/items.entity';
+import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
 import { ItemDomainFactory } from '../../../domain/inventory/items/factories/item.domain.factory';
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
+import {
+  ItemListNotFoundOperator,
+  CategoriesNotFoundOperator,
+} from 'src/common/types/rxjs-operator.types';
 
 @Injectable()
 export class ItemListService implements ItemListServiceInterface {
@@ -30,13 +46,13 @@ export class ItemListService implements ItemListServiceInterface {
     const pagination = Pagination.of(input.pages);
     const sortOrder = SortOrder.of(input.sortOrder);
     return this.ItemsDatasource.findItemList(pagination, sortOrder).pipe(
+      this.throwIfItemsNotFound(),
       switchMap((items) => {
-        if (items.length === 0) {
-          return throwError(() => new NotFoundException('Items not found'));
-        }
         const itemIds = items.map((item) => item.id);
         return forkJoin([
-          this.categoriesDatasource.findByCategories(itemIds),
+          this.categoriesDatasource
+            .findByCategories(itemIds)
+            .pipe(this.throwIfCategoriesNotFound()),
           this.categoriesDatasource.findCategoryIdsAndItemIds(itemIds),
           of(items),
           this.ItemsDatasource.countAll(),
@@ -59,4 +75,30 @@ export class ItemListService implements ItemListServiceInterface {
       })
     );
   }
+
+  private throwIfItemsNotFound = (): ItemListNotFoundOperator => (source$) =>
+    source$.pipe(
+      filter((items: Items[]) => items.length > 0),
+      defaultIfEmpty(undefined),
+      mergeMap((items) =>
+        items
+          ? [items]
+          : throwError(() => new NotFoundException('Items not found'))
+      )
+    );
+
+  private throwIfCategoriesNotFound =
+    (): CategoriesNotFoundOperator => (source$) =>
+      source$.pipe(
+        filter(
+          (categories: Categories[] | undefined) =>
+            !!categories && categories.length > 0
+        ),
+        defaultIfEmpty(undefined),
+        mergeMap((categories) =>
+          categories
+            ? [categories]
+            : throwError(() => new NotFoundException('Categories not found'))
+        )
+      );
 }

@@ -12,6 +12,7 @@ import {
   throwError,
   of,
   map,
+  mergeMap,
 } from 'rxjs';
 import { ItemRegisterInputDto } from '../../dto/input/item/item.register.input.dto';
 import { ItemRegisterOutputDto } from '../../dto/output/item/item.register.output.dto';
@@ -105,18 +106,26 @@ export class ItemRegisterService implements ItemRegisterServiceInterface {
    * @param categoryIds
    * @returns Observable<Categories[]>
    */
-  public checkCategoriesExist(categoryIds: number[]): Observable<Categories[]> {
-    return this.categoriesDatasource.findByCategoryIds(categoryIds).pipe(
-      map((categories) => {
-        if (categories.length !== categoryIds.length) {
-          throw new NotFoundException('指定されたカテゴリはすべて存在しません');
-        }
-        return categories;
-      })
-    );
+  private checkCategoriesExist(
+    categoryIds: number[]
+  ): Observable<Categories[]> {
+    return this.categoriesDatasource
+      .findByCategoryIds(categoryIds)
+      .pipe(
+        mergeMap((categories) =>
+          categories.length !== categoryIds.length
+            ? throwError(
+                () =>
+                  new NotFoundException(
+                    '指定されたカテゴリはすべて存在しません'
+                  )
+              )
+            : of(categories)
+        )
+      );
   }
 
-  public registerItemWithinTransaction(
+  private registerItemWithinTransaction(
     name: string,
     quantity: number,
     description: string,

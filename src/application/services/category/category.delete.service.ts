@@ -4,7 +4,7 @@ import {
   InternalServerErrorException,
   NotFoundException,
 } from '@nestjs/common';
-import { catchError, map, Observable, switchMap, throwError } from 'rxjs';
+import { catchError, map, Observable, switchMap, throwError, of } from 'rxjs';
 import { CategoryDeleteInputDto } from '../../dto/input/category/category.delete.input.dto';
 import { CategoryDeleteOutputDto } from '../../dto/output/category/category.delete.output.dto';
 import { CategoryDeleteServiceInterface } from './category.delete.interface';
@@ -12,6 +12,7 @@ import { CategoriesDatasource } from '../../../infrastructure/datasources/catego
 import { CategoryDeleteOutputBuilder } from '../../dto/output/category/category.delete.output.builder';
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 import { Logger } from '@nestjs/common';
+import { CategoryNotFoundOperator } from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class CategoryDeleteService implements CategoryDeleteServiceInterface {
@@ -25,13 +26,12 @@ export class CategoryDeleteService implements CategoryDeleteServiceInterface {
     this.logger.log(`Starting delete for category with ID: ${categoryId}`);
 
     return this.categoriesDatasource.findByCategoryId(categoryId).pipe(
-      switchMap((categories) => {
-        if (!categories) {
-          return throwError(() => new NotFoundException('Category not found'));
-        }
+      this.throwIfCategoryNotFound(),
+      switchMap((category) => {
         //ファクトリでドメインエンティティに変換
-        const category = CategoryDomainFactory.fromInfrastructure(categories);
-        const deletedCategory = category.delete();
+        const domainCategory =
+          CategoryDomainFactory.fromInfrastructure(category);
+        const deletedCategory = domainCategory.delete();
         return this.categoriesDatasource
           .deleteCategory(deletedCategory.id)
           .pipe(
@@ -53,6 +53,17 @@ export class CategoryDeleteService implements CategoryDeleteServiceInterface {
           );
       })
     );
+  }
+
+  private throwIfCategoryNotFound(): CategoryNotFoundOperator {
+    return (source$) =>
+      source$.pipe(
+        switchMap((category) =>
+          category
+            ? of(category)
+            : throwError(() => new NotFoundException('Category not found'))
+        )
+      );
   }
 
   private handleDeleteError(error: any): Observable<never> {

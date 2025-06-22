@@ -18,6 +18,10 @@ import { CategoryDomainService } from '../../../domain/inventory/items/services/
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 import { CategoryUpdateOutputBuilder } from '../../dto/output/category/category.update.builder';
 import { Logger } from '@nestjs/common';
+import {
+  CategoryNotFoundOperator,
+  CategoryUpdateConflictOperator,
+} from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class CategoryUpdateService {
@@ -37,11 +41,8 @@ export class CategoryUpdateService {
     this.logger.log(`Starting update for category with ID: ${categoryId}`);
 
     return this.categoriesDatasource.findByCategoryId(categoryId).pipe(
+      this.throwIfCategoryNotFound(),
       switchMap((categories) => {
-        if (!categories) {
-          return throwError(() => new NotFoundException('Category not found'));
-        }
-
         //ファクトリでドメインエンティティに変換
         const category = CategoryDomainFactory.fromInfrastructure(categories);
 
@@ -49,15 +50,9 @@ export class CategoryUpdateService {
         return this.categoryDomainService
           .updateCategoryFields(category, name, description)
           .pipe(
-            switchMap((updatedCategory) => {
-              if (!updatedCategory) {
-                return throwError(
-                  () => new ConflictException('Category was not updated')
-                );
-              }
-
-              //トランザクション処理
-              return this.categoriesDatasource
+            this.throwIfCategoryUpdateConflict(),
+            switchMap((updatedCategory) =>
+              this.categoriesDatasource
                 .updateCategory(
                   categoryId,
                   updatedCategory.name,
@@ -80,10 +75,34 @@ export class CategoryUpdateService {
                     this.logger.error('Error updating category:', error);
                     return throwError(() => error); // エラーを再スロー
                   })
-                );
-            })
+                )
+            )
           );
       })
     );
+  }
+
+  private throwIfCategoryNotFound(): CategoryNotFoundOperator {
+    return (source$) =>
+      source$.pipe(
+        switchMap((category) =>
+          category
+            ? of(category)
+            : throwError(() => new NotFoundException('Category not found'))
+        )
+      );
+  }
+
+  private throwIfCategoryUpdateConflict(): CategoryUpdateConflictOperator {
+    return (source$) =>
+      source$.pipe(
+        switchMap((updatedCategory) =>
+          updatedCategory
+            ? of(updatedCategory)
+            : throwError(
+                () => new ConflictException('Category was not updated')
+              )
+        )
+      );
   }
 }

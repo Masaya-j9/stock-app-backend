@@ -122,20 +122,21 @@ describe('ItemRestoreService', () => {
             () => new NotFoundException(`Item with ID ${input.id} not found`)
           )
         );
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of([1, 2]));
 
-      // serviceメソッド経由で404エラーが返ることを検証
       itemRestoreService.service(input).subscribe({
         next: () => {
-          done.fail('Expected an error to be thrown');
+          fail('Expected an error to be thrown');
         },
         error: (err) => {
-          // publicメソッド(service)経由でNotFoundExceptionがthrowされることを検証
           expect(err).toBeInstanceOf(NotFoundException);
           expect(err.message).toBe(`Item with ID ${input.id} not found`);
           done();
         },
         complete: () => {
-          done.fail('Expected an error to be thrown');
+          fail('Expected an error to be thrown');
         },
       });
     });

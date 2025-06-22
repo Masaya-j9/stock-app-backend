@@ -32,7 +32,6 @@ describe('ItemUpdateService', () => {
           useValue: {
             findItemById: jest.fn(),
             findCategoryIdsByItemId: jest.fn(),
-            findItemByName: jest.fn(),
             updateItemWithinTransactionQuery: jest.fn(),
             updateItemCategoriesWithinTransactionQuery: jest.fn(),
             dataSource: {
@@ -165,9 +164,6 @@ describe('ItemUpdateService', () => {
         .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
         .mockReturnValue(of(mockQueryCategoryIds));
       jest
-        .spyOn(itemsDatasource, 'findItemByName')
-        .mockReturnValue(of(undefined));
-      jest
         .spyOn(itemsDatasource, 'updateItemWithinTransactionQuery')
         .mockReturnValue(of(mockUpdatedItem));
       jest
@@ -274,9 +270,6 @@ describe('ItemUpdateService', () => {
         .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
         .mockReturnValue(of(mockqueryCategoryIds));
       jest
-        .spyOn(itemsDatasource, 'findItemByName')
-        .mockReturnValue(of(undefined));
-      jest
         .spyOn(itemsDatasource, 'updateItemWithinTransactionQuery')
         .mockReturnValue(of(mockUpdatedItem));
       jest
@@ -331,6 +324,9 @@ describe('ItemUpdateService', () => {
         .mockReturnValue(
           throwError(() => new NotFoundException('Item not found'))
         );
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of([1, 2, 3]));
 
       itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
         next: () => {
@@ -407,17 +403,6 @@ describe('ItemUpdateService', () => {
       };
       const mockQueryItem: Items = {
         id: 1,
-        name: 'existingItemName',
-        quantity: 10,
-        description: 'itemDescription',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        deletedAt: null,
-        itemCategories: [],
-      };
-      const mockQueryCategoryIds: number[] = [1, 2, 3];
-      const mockExistingItem: Items = {
-        id: 2,
         name: 'updatedItemName',
         quantity: 10,
         description: 'itemDescription',
@@ -426,6 +411,7 @@ describe('ItemUpdateService', () => {
         deletedAt: null,
         itemCategories: [],
       };
+      const mockQueryCategoryIds: number[] = [1, 2, 3];
 
       jest
         .spyOn(itemsDatasource, 'findItemById')
@@ -433,9 +419,6 @@ describe('ItemUpdateService', () => {
       jest
         .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
         .mockReturnValue(of(mockQueryCategoryIds));
-      jest
-        .spyOn(itemsDatasource, 'findItemByName')
-        .mockReturnValue(of(mockExistingItem));
 
       itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
         next: () => {
@@ -449,9 +432,6 @@ describe('ItemUpdateService', () => {
           );
           expect(itemsDatasource.findCategoryIdsByItemId).toHaveBeenCalledWith(
             inputItemId
-          );
-          expect(itemsDatasource.findItemByName).toHaveBeenCalledWith(
-            itemUpdateInputDto.name
           );
           done();
         },
@@ -486,10 +466,7 @@ describe('ItemUpdateService', () => {
         .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
         .mockReturnValue(of(mockQueryCategoryIds));
       jest
-        .spyOn(itemsDatasource, 'findItemByName')
-        .mockReturnValue(of(undefined));
-      jest
-        .spyOn(itemUpdateService, 'tryUpdateDomainItem')
+        .spyOn(itemUpdateService as any, 'tryUpdateDomainItem')
         .mockImplementation(() => {
           throw new BadRequestException('Invalid update parameters');
         });
@@ -548,10 +525,7 @@ describe('ItemUpdateService', () => {
         .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
         .mockReturnValue(of(mockQueryCategoryIds));
       jest
-        .spyOn(itemsDatasource, 'findItemByName')
-        .mockReturnValue(of(undefined));
-      jest
-        .spyOn(itemUpdateService, 'tryUpdateDomainItem')
+        .spyOn(itemUpdateService as any, 'tryUpdateDomainItem')
         .mockImplementation(() => mockUpdatedItem);
       jest
         .spyOn(itemsDatasource.dataSource.manager, 'transaction')

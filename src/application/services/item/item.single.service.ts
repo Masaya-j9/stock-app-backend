@@ -1,3 +1,12 @@
+import {
+  map,
+  Observable,
+  switchMap,
+  throwError,
+  filter,
+  defaultIfEmpty,
+  mergeMap,
+} from 'rxjs';
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { ItemSingleServiceInterface } from './item.single.interface';
 import { ItemSingleInputDto } from '../../dto/input/item/item.single.input.dto';
@@ -7,7 +16,12 @@ import { ItemsDatasource } from '../../../infrastructure/datasources/items/items
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { ItemDomainFactory } from '../../../domain/inventory/items/factories/item.domain.factory';
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
-import { map, Observable, switchMap, throwError } from 'rxjs';
+import { Items } from '../../../infrastructure/orm/entities/items.entity';
+import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
+import {
+  ItemNotFoundOperator,
+  CategoriesNotFoundOperator,
+} from '../../../common/types/rxjs-operator.types';
 
 @Injectable()
 export class ItemSingleService implements ItemSingleServiceInterface {
@@ -29,15 +43,11 @@ export class ItemSingleService implements ItemSingleServiceInterface {
     const itemId = input.itemId;
 
     return this.itemsDatasource.findItemById(itemId).pipe(
-      switchMap((item) => {
-        if (!item) {
-          return throwError(() => new NotFoundException('Item not found'));
-        }
-        return this.categoriesDatasource.findCategoriesByItemId(item.id).pipe(
+      this.throwIfItemNotFound(),
+      switchMap((item) =>
+        this.categoriesDatasource.findCategoriesByItemId(item.id).pipe(
+          this.throwIfCategoriesNotFound(),
           map((categories) => {
-            if (!categories) {
-              throw new NotFoundException('Categories not found');
-            }
             const categoryIds = categories.map((category) => category.id);
             const domainItem = ItemDomainFactory.fromInfrastructureSingle(
               item,
@@ -52,8 +62,34 @@ export class ItemSingleService implements ItemSingleServiceInterface {
             );
             return builder.build();
           })
-        );
-      })
+        )
+      )
     );
   }
+
+  private throwIfItemNotFound = (): ItemNotFoundOperator => (source$) =>
+    source$.pipe(
+      filter((item: Items | undefined): item is Items => !!item),
+      defaultIfEmpty(undefined),
+      mergeMap((item) =>
+        item
+          ? [item]
+          : throwError(() => new NotFoundException('Item not found'))
+      )
+    );
+
+  private throwIfCategoriesNotFound =
+    (): CategoriesNotFoundOperator => (source$) =>
+      source$.pipe(
+        filter(
+          (categories: Categories[] | undefined): categories is Categories[] =>
+            !!categories && categories.length > 0
+        ),
+        defaultIfEmpty(undefined),
+        mergeMap((categories) =>
+          categories
+            ? [categories]
+            : throwError(() => new NotFoundException('Categories not found'))
+        )
+      );
 }
