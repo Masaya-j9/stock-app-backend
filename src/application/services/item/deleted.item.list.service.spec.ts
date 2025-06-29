@@ -39,7 +39,7 @@ describe('DeletedItemListService', () => {
         {
           provide: CategoriesDatasource,
           useValue: {
-            findByCategories: jest.fn(),
+            findByCategoriesForDeletedItems: jest.fn(),
             findCategoryIdsAndItemIds: jest.fn(),
           },
         },
@@ -168,7 +168,7 @@ describe('DeletedItemListService', () => {
         .spyOn(itemsDatasource, 'findDeletedItemList')
         .mockReturnValue(of(mockDeletedItems));
       jest
-        .spyOn(categoriesDatasource, 'findByCategories')
+        .spyOn(categoriesDatasource, 'findByCategoriesForDeletedItems')
         .mockReturnValue(of(mockCategories));
       jest
         .spyOn(categoriesDatasource, 'findCategoryIdsAndItemIds')
@@ -238,7 +238,7 @@ describe('DeletedItemListService', () => {
         .spyOn(itemsDatasource, 'findDeletedItemList')
         .mockReturnValue(of(mockDeletedItems));
       jest
-        .spyOn(categoriesDatasource, 'findByCategories')
+        .spyOn(categoriesDatasource, 'findByCategoriesForDeletedItems')
         .mockReturnValue(of(mockCategories));
       jest
         .spyOn(categoriesDatasource, 'findCategoryIdsAndItemIds')
@@ -261,6 +261,68 @@ describe('DeletedItemListService', () => {
           expect(err).toBeInstanceOf(Error);
           expect(err).toBeInstanceOf(NotFoundException);
           expect(err.message).toBe('Items not found');
+          done();
+        },
+        complete: () => {
+          done.fail('Expected an error, but completed successfully');
+        },
+      });
+    });
+
+    it('論理削除されている物品に対応するカテゴリが存在しない場合、404エラーをスローする', (done) => {
+      const mockDeletedItems: Items[] = [
+        {
+          id: 1,
+          name: 'Deleted Item 1',
+          quantity: 10,
+          description: 'Description 1',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: new Date(),
+          itemCategories: [],
+        },
+        {
+          id: 2,
+          name: 'Deleted Item 2',
+          quantity: 5,
+          description: 'Description 2',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          deletedAt: new Date(),
+          itemCategories: [],
+        },
+      ];
+      const mockCategories: Categories[] = [];
+      const mockCategoryIdsAndItemIds = [];
+      const mockTotalItemCount: number = 10;
+
+      jest
+        .spyOn(itemsDatasource, 'findDeletedItemList')
+        .mockReturnValue(of(mockDeletedItems));
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoriesForDeletedItems')
+        .mockReturnValue(of(mockCategories));
+      jest
+        .spyOn(categoriesDatasource, 'findCategoryIdsAndItemIds')
+        .mockReturnValue(of(mockCategoryIdsAndItemIds));
+      jest
+        .spyOn(itemsDatasource, 'countDeletedAll')
+        .mockReturnValue(of(mockTotalItemCount));
+      mockItemDomainFactory.fromInfrastructure.mockImplementation(() => {
+        return null;
+      });
+      mockCategoryDomainFactory.fromInfrastructure.mockImplementation(() => {
+        return null;
+      });
+
+      deletedItemListService.service({ pages: 1, sortOrder: 0 }).subscribe({
+        next: () => {
+          done.fail('Expected an error, but got a result');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(Error);
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.message).toBe('Categories not found');
           done();
         },
         complete: () => {

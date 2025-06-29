@@ -378,6 +378,29 @@ describe('ItemController', () => {
         },
       });
     });
+
+    it('削除された物品のカテゴリが存在しない場合、404エラーを返す', (done) => {
+      const query: DeletedItemListInputDto = { pages: 1, sortOrder: 0 };
+      jest
+        .spyOn(deletedItemListService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Categories not found'))
+        );
+      controller.findDeletedItemList(query).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Categories not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
   });
 
   describe('DeletedItemSingleService', () => {
