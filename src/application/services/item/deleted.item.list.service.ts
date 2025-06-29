@@ -1,6 +1,16 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { DeletedItemListServiceInterface } from './deleted.item.list.interface';
-import { Observable, forkJoin, map, of, switchMap, throwError } from 'rxjs';
+import {
+  Observable,
+  forkJoin,
+  map,
+  of,
+  switchMap,
+  throwError,
+  filter,
+  defaultIfEmpty,
+  mergeMap,
+} from 'rxjs';
 import { DeletedItemListInputDto } from '../../dto/input/item/deleted.item.list.input.dto';
 import { DeletedItemListOutputDto } from '../../dto/output/item/deleted.item.list.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
@@ -10,7 +20,12 @@ import { ItemDomainFactory } from '../../../domain/inventory/items/factories/ite
 import { CategoryDomainFactory } from '../../../domain/inventory/items/factories/category.domain.factory';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
-import { ItemListNotFoundOperator } from '../../../common/types/rxjs-operator.types';
+import {
+  ItemListNotFoundOperator,
+  CategoriesNotFoundOperator,
+} from '../../../common/types/rxjs-operator.types';
+import { Items } from '../../../infrastructure/orm/entities/items.entity';
+import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
 
 @Injectable()
 export class DeletedItemListService implements DeletedItemListServiceInterface {
@@ -35,11 +50,13 @@ export class DeletedItemListService implements DeletedItemListServiceInterface {
     const sortOrder = SortOrder.of(input.sortOrder);
 
     return this.ItemsDatasource.findDeletedItemList(pagination, sortOrder).pipe(
-      this.throwIfItemListNotFound(),
+      this.throwIfItemsNotFound(),
       switchMap((deletedItems) => {
         const itemIds = deletedItems.map((item) => item.id);
         return forkJoin([
-          this.categoriesDatasource.findByCategories(itemIds),
+          this.categoriesDatasource
+            .findByCategoriesForDeletedItems(itemIds)
+            .pipe(this.throwIfCategoriesNotFound()),
           this.categoriesDatasource.findCategoryIdsAndItemIds(itemIds),
           of(deletedItems),
           this.ItemsDatasource.countDeletedAll(),
@@ -65,15 +82,29 @@ export class DeletedItemListService implements DeletedItemListServiceInterface {
     );
   }
 
-  private throwIfItemListNotFound(): ItemListNotFoundOperator {
-    return (source$) =>
+  private throwIfItemsNotFound = (): ItemListNotFoundOperator => (source$) =>
+    source$.pipe(
+      filter((items: Items[]) => items.length > 0),
+      defaultIfEmpty(undefined),
+      mergeMap((items) =>
+        items
+          ? [items]
+          : throwError(() => new NotFoundException('Items not found'))
+      )
+    );
+
+  private throwIfCategoriesNotFound =
+    (): CategoriesNotFoundOperator => (source$) =>
       source$.pipe(
-        map((items) => items ?? []),
-        switchMap((items) =>
-          items.length === 0
-            ? throwError(() => new NotFoundException('Items not found'))
-            : of(items)
+        filter(
+          (categories: Categories[] | undefined) =>
+            !!categories && categories.length > 0
+        ),
+        defaultIfEmpty(undefined),
+        mergeMap((categories) =>
+          categories
+            ? [categories]
+            : throwError(() => new NotFoundException('Categories not found'))
         )
       );
-  }
 }
