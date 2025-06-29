@@ -4,7 +4,7 @@ import { DataSource, EntityManager } from 'typeorm';
 import { Items } from '../../orm/entities/items.entity';
 import { ItemCategories } from '../../orm/entities/intermediates/item.categories.entity';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
-import { from, lastValueFrom, map, Observable } from 'rxjs';
+import { from, lastValueFrom, map, Observable, of, switchMap } from 'rxjs';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
 
 @Injectable()
@@ -17,37 +17,45 @@ export class ItemsDatasource {
    * 登録されている物品の一覧を取得する
    * @param {ItemListInputDto} query - リクエスト情報
    * @return {Observable<ItemListOutputDto>} - 登録されている物品の一覧情報
-   *
    */
   findItemList(
     pagination: Pagination,
     sortOrder: SortOrder
   ): Observable<Items[]> {
-    const subQuery = this.dataSource
-      .createQueryBuilder()
-      .select('id')
-      .from('items', 'items')
-      .where('items.deleted_at IS NULL')
-      .orderBy('items.id', 'ASC')
-      .offset(pagination.offset())
-      .limit(pagination.itemsPerPage());
-
     return from(
       this.dataSource
         .createQueryBuilder()
-        .select([
-          'items.id AS id',
-          'items.name AS name',
-          'items.quantity AS quantity',
-          'items.description AS description',
-          'items.createdAt AS createdAt',
-          'items.updatedAt AS updatedAt',
-        ])
+        .select('items.id', 'id')
         .from('items', 'items')
-        .innerJoin(`(${subQuery.getQuery()})`, 'sub', 'items.id = sub.id')
-        .setParameters(subQuery.getParameters())
+        .where('items.deleted_at IS NULL')
         .orderBy('items.id', sortOrder.toQuerySort())
+        .offset(pagination.offset())
+        .limit(pagination.itemsPerPage())
         .getRawMany()
+    ).pipe(
+      map((subItems) => subItems.map((item) => item.id)),
+      switchMap((ids) => {
+        if (ids.length === 0) return of([]);
+
+        const fieldOrder = ids.join(',');
+
+        return from(
+          this.dataSource
+            .createQueryBuilder('items', 'items')
+            .select([
+              'items.id AS id',
+              'items.name AS name',
+              'items.quantity AS quantity',
+              'items.description AS description',
+              'items.created_at AS createdAt',
+              'items.updated_at AS updatedAt',
+            ])
+            .where('items.id IN (:...ids)', { ids })
+            .andWhere('items.deleted_at IS NULL')
+            .orderBy(`FIELD(items.id, ${fieldOrder})`)
+            .getRawMany()
+        );
+      })
     );
   }
 
