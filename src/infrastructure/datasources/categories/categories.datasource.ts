@@ -2,7 +2,15 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource } from 'typeorm';
 import { Categories } from '../../orm/entities/categories.entity';
-import { from, map, Observable } from 'rxjs';
+import {
+  from,
+  map,
+  Observable,
+  of,
+  filter,
+  switchMap,
+  defaultIfEmpty,
+} from 'rxjs';
 import { ItemAndCategoryType } from '../../types/item.and.category.type';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 
@@ -183,21 +191,27 @@ export class CategoriesDatasource {
    *  @returns {Observable<Categories[]>} - カテゴリー情報の配列
    */
   findByCategoryIds(categoryIds: number[]): Observable<Categories[]> {
-    return from(
-      this.dataSource
-        .createQueryBuilder()
-        .select([
-          'categories.id AS id',
-          'categories.name AS name',
-          'categories.description AS description',
-          'categories.createdAt AS createdAt',
-          'categories.updatedAt AS updatedAt',
-          'categories.deletedAt AS deletedAt',
-        ])
-        .from('categories', 'categories')
-        .where('categories.id IN (:...categoryIds)', { categoryIds })
-        .andWhere('categories.deletedAt IS NULL')
-        .getRawMany()
+    return of(categoryIds).pipe(
+      filter((ids) => !!ids && ids.length > 0),
+      switchMap((ids) =>
+        from(
+          this.dataSource
+            .createQueryBuilder()
+            .select([
+              'categories.id AS id',
+              'categories.name AS name',
+              'categories.description AS description',
+              'categories.createdAt AS createdAt',
+              'categories.updatedAt AS updatedAt',
+              'categories.deletedAt AS deletedAt',
+            ])
+            .from('categories', 'categories')
+            .where('categories.id IN (:...categoryIds)', { categoryIds: ids })
+            .andWhere('categories.deletedAt IS NULL')
+            .getRawMany()
+        )
+      ),
+      defaultIfEmpty([])
     );
   }
 
