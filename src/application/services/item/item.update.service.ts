@@ -7,17 +7,16 @@ import {
 } from '@nestjs/common';
 import {
   forkJoin,
-  lastValueFrom,
   Observable,
   switchMap,
   throwError,
-  map,
-  Subscriber,
   filter,
   defaultIfEmpty,
   mergeMap,
   of,
-  iif,
+  catchError,
+  map,
+  Subscriber,
 } from 'rxjs';
 import { ItemUpdateServiceInterface } from './item.update.interface';
 import { ItemUpdateInputDto } from '../../dto/input/item/item.update.input.dto';
@@ -96,7 +95,6 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
       switchMap(({ domainItem, categoryDiffResult }) => {
         const { addCategoryIds, deleteCategoryIds }: categoryDiff =
           categoryDiffResult;
-        // ドメインエンティティを更新
         const updatedDomainItem = this.tryUpdateDomainItem(
           domainItem,
           name.value(),
@@ -104,42 +102,107 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
           description.value(),
           categoryIds
         );
-        // トランザクション処理をsubscriber内で行う
-        return new Observable<ItemUpdateOutputDto>((subscriber) => {
-          this.itemsDatasource.dataSource.manager
-            .transaction(async (transactionalEntityManager) => {
-              try {
-                const updatedItemWithCategories = await lastValueFrom(
-                  this.updateItemWithinTransaction(
-                    updatedDomainItem,
-                    addCategoryIds,
-                    deleteCategoryIds,
-                    transactionalEntityManager
-                  )
-                );
-
-                subscriber.next(updatedItemWithCategories);
-                subscriber.complete();
-              } catch (error) {
-                this.logger.error('Error during item update:', error);
-                subscriber.error(
-                  new InternalServerErrorException(
-                    '更新処理中にエラーが発生しました'
-                  )
-                );
-              }
-            })
-            .catch((error) => {
-              this.logger.error('Transaction failed:', error);
-              subscriber.error(
-                new InternalServerErrorException(
-                  'トランザクション処理中にエラーが発生しました'
-                )
-              );
-            });
-        });
+        return this.runTransactionObservable(
+          updatedDomainItem,
+          addCategoryIds,
+          deleteCategoryIds
+        );
+      }),
+      catchError((error) => {
+        this.logger.error('Error during item update:', error);
+        if (
+          error instanceof NotFoundException ||
+          error instanceof ConflictException ||
+          error instanceof BadRequestException
+        ) {
+          return throwError(() => error);
+        }
+        return throwError(
+          () =>
+            new InternalServerErrorException('更新処理中にエラーが発生しました')
+        );
       })
     );
+  }
+
+  private runTransactionObservable(
+    updatedDomainItem: Item,
+    addIds: number[],
+    deleteIds: number[]
+  ): Observable<ItemUpdateOutputDto> {
+    return new Observable<ItemUpdateOutputDto>((subscriber) => {
+      this.itemsDatasource.dataSource.manager
+        .transaction((transactionalEntityManager) => {
+          return this.updateItemWithinTransactionObservable(
+            updatedDomainItem,
+            addIds,
+            deleteIds,
+            transactionalEntityManager
+          ).toPromise();
+        })
+        .then((result) => {
+          subscriber.next(result);
+          subscriber.complete();
+        })
+        .catch((error) => {
+          subscriber.error(error);
+        });
+    });
+  }
+
+  private updateItemWithinTransactionObservable(
+    updatedDomainItem: Item,
+    addIds: number[],
+    deleteIds: number[],
+    transactionalEntityManager
+  ): Observable<ItemUpdateOutputDto> {
+    return this.itemsDatasource
+      .updateItemWithinTransactionQuery(
+        updatedDomainItem.id,
+        updatedDomainItem.name,
+        updatedDomainItem.quantity,
+        updatedDomainItem.description,
+        transactionalEntityManager
+      )
+      .pipe(
+        this.throwIfUpdateItemFailed(),
+        switchMap(() => {
+          if (addIds.length > 0 || deleteIds.length > 0) {
+            return this.itemsDatasource
+              .updateItemCategoriesWithinTransactionQuery(
+                updatedDomainItem.id,
+                addIds,
+                deleteIds,
+                transactionalEntityManager
+              )
+              .pipe(
+                switchMap((result) =>
+                  this.categoriesDatasource
+                    .findByCategoryIds(result.categoryIds)
+                    .pipe(
+                      map((updatedCategories) =>
+                        this.buildItemUpdateOutput(
+                          updatedDomainItem,
+                          updatedCategories
+                        )
+                      )
+                    )
+                )
+              );
+          } else {
+            return this.categoriesDatasource
+              .findByCategoryIds([])
+              .pipe(
+                map((updatedCategories) =>
+                  this.buildItemUpdateOutput(
+                    updatedDomainItem,
+                    updatedCategories
+                  )
+                )
+              );
+          }
+        })
+      );
   }
 
   private throwIfItemNotFound = (): ItemNotFoundOperator => (source$) =>
@@ -228,55 +291,6 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
         })();
   }
 
-  private updateItemWithinTransaction(
-    updatedDomainItem: Item,
-    addIds: number[],
-    deleteIds: number[],
-    transactionalEntityManager
-  ): Observable<ItemUpdateOutputDto> {
-    return new Observable<ItemUpdateOutputDto>((subscriber) => {
-      this.itemsDatasource
-        .updateItemWithinTransactionQuery(
-          updatedDomainItem.id,
-          updatedDomainItem.name,
-          updatedDomainItem.quantity,
-          updatedDomainItem.description,
-          transactionalEntityManager
-        )
-        .pipe(
-          this.throwIfUpdateItemFailed(),
-          switchMap(() => {
-            return iif(
-              () => addIds.length > 0 || deleteIds.length > 0,
-              this.itemsDatasource
-                .updateItemCategoriesWithinTransactionQuery(
-                  updatedDomainItem.id,
-                  addIds,
-                  deleteIds,
-                  transactionalEntityManager
-                )
-                .pipe(
-                  switchMap(
-                    this.emitItemUpdateWithCategories(
-                      subscriber,
-                      updatedDomainItem
-                    )
-                  )
-                ),
-              of(null).pipe(
-                map(() => {
-                  this.emitItemUpdate(subscriber, updatedDomainItem, []);
-                })
-              )
-            );
-          })
-        )
-        .subscribe({
-          error: (err) => subscriber.error(err),
-        });
-    });
-  }
-
   private throwIfUpdateItemFailed = () => (source$) =>
     source$.pipe(
       mergeMap((updatedItem) =>
@@ -288,15 +302,18 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
       )
     );
 
-  private emitItemUpdateWithCategories(
-    subscriber: Subscriber<ItemUpdateOutputDto>,
-    updatedDomainItem: Item
-  ) {
-    return ({ categoryIds }: { categoryIds: number[] }) =>
-      this.categoriesDatasource.findByCategoryIds(categoryIds).pipe(
-        map((updatedCategories) => {
-          this.emitItemUpdate(subscriber, updatedDomainItem, updatedCategories);
-        })
-      );
+  private buildItemUpdateOutput(
+    item: Item,
+    categories: Categories[]
+  ): ItemUpdateOutputDto {
+    const builder = new ItemUpdateOutputBuilder(
+      item.id,
+      item.name,
+      item.quantity,
+      item.description,
+      item.updatedAt,
+      categories
+    );
+    return builder.build();
   }
 }
