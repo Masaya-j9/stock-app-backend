@@ -39,6 +39,37 @@ export class CategoriesDatasource {
     );
   }
 
+  /**
+   * 論理削除されたアイテムのカテゴリ情報を取得する
+   * @param itemIds - アイテムIDの配列
+   * @returns Observable<Categories[]> - カテゴリ情報の配列
+   */
+  findByCategoriesForDeletedItems(itemIds: number[]): Observable<Categories[]> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select([
+          'categories.id AS id',
+          'categories.name AS name',
+          'categories.description AS description',
+          'item_categories.item_id AS itemId',
+          'categories.created_at AS createdAt',
+          'categories.updated_at AS updatedAt',
+        ])
+        .from('categories', 'categories')
+        .withDeleted()
+        .innerJoin(
+          'item_categories',
+          'item_categories',
+          'categories.id = item_categories.category_id AND item_categories.deleted_at IS NULL'
+        )
+        .innerJoin('items', 'items', 'items.id = item_categories.item_id')
+        .where('items.id IN (:...itemIds)', { itemIds })
+        .andWhere('categories.deleted_at IS NULL')
+        .getRawMany()
+    );
+  }
+
   findCategoryIdsAndItemIds(
     itemIds: number[]
   ): Observable<ItemAndCategoryType[]> {
