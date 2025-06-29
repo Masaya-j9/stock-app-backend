@@ -531,7 +531,7 @@ describe('ItemUpdateService', () => {
         .spyOn(itemsDatasource.dataSource.manager, 'transaction')
         .mockImplementation(() => {
           throw new InternalServerErrorException(
-            'トランザクション処理中にエラーが発生しました'
+            '更新処理中にエラーが発生しました'
           );
         });
 
@@ -541,9 +541,7 @@ describe('ItemUpdateService', () => {
         },
         error: (error) => {
           expect(error).toBeInstanceOf(InternalServerErrorException);
-          expect(error.message).toBe(
-            'トランザクション処理中にエラーが発生しました'
-          );
+          expect(error.message).toBe('更新処理中にエラーが発生しました');
           done();
         },
         complete: () => {
