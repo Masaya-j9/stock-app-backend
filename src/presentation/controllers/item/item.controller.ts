@@ -20,6 +20,7 @@ import { ItemSingleServiceInterface } from '../../../application/services/item/i
 import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
 import { DeletedItemSingleServiceInterface } from '../../../application/services/item/deleted.item.single.interface';
 import { ItemRestoreServiceInterface } from '../../../application/services/item/item.restore.interface';
+import { UpdateItemQuantityServiceInterface } from '../../../application/services/item/update.item.quantity.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemRegisterInputDto } from '../../../application/dto/input/item/item.register.input.dto';
@@ -36,6 +37,8 @@ import { DeletedItemSingleInputDto } from '../../../application/dto/input/item/d
 import { DeletedItemSingleOutputDto } from '../../../application/dto/output/item/deleted.item.single.output.dto';
 import { ItemRestoreInputDto } from '../../../application/dto/input/item/item.restore.input.dto';
 import { ItemRestoreOutputDto } from '../../../application/dto/output/item/item.restore.output.dto';
+import { UpdateItemQuantityInputDto } from '../../../application/dto/input/item/update.item.quantity.input.dto';
+import { UpdateItemQuantityOutputDto } from '../../../application/dto/output/item/update.item.quantity.output.dto';
 
 @ApiTags('items')
 @Controller('items')
@@ -56,7 +59,9 @@ export class ItemController {
     @Inject('DeletedItemSingleServiceInterface')
     private readonly DeletedItemSingleService: DeletedItemSingleServiceInterface,
     @Inject('ItemRestoreServiceInterface')
-    private readonly ItemRestoreService: ItemRestoreServiceInterface
+    private readonly ItemRestoreService: ItemRestoreServiceInterface,
+    @Inject('UpdateItemQuantityServiceInterface')
+    private readonly UpdateItemQuantityService: UpdateItemQuantityServiceInterface
   ) {}
 
   /**
@@ -223,5 +228,22 @@ export class ItemController {
   ): Observable<ItemSingleOutputDto> {
     const request: ItemSingleInputDto = { itemId };
     return this.ItemSingleService.service(request);
+  }
+
+  @ApiOperation({
+    summary: '物品の数量を更新するエンドポイント',
+    description: '物品の数量を更新するAPI',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Updated',
+    type: UpdateItemQuantityOutputDto,
+  })
+  @Patch('quantity/:item_id')
+  updateItemQuantity(
+    @Param('item_id', ParseIntPipe) itemId: number,
+    @Body() body: UpdateItemQuantityInputDto
+  ): Observable<UpdateItemQuantityOutputDto> {
+    return this.UpdateItemQuantityService.service(body, itemId);
   }
 }
