@@ -6,6 +6,7 @@ import { ItemCategories } from '../../orm/entities/intermediates/item.categories
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, lastValueFrom, map, Observable, of, switchMap } from 'rxjs';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
+import { Quantity } from '../../../domain/inventory/items/value-objects/quantity';
 
 @Injectable()
 export class ItemsDatasource {
@@ -609,6 +610,42 @@ export class ItemsDatasource {
           id,
           updatedAt: new Date(),
           deletedAt: null,
+        };
+      })
+    );
+  }
+
+  /**
+   * 物品IDと物品数から物品数を更新するクエリを作成
+   * @param itemId - 物品ID
+   * @param quantity - 数量に関する値オブジェクト
+   * @returns Observable<{ quantity: number, updatedAt: Date }>
+   */
+  //トランザクション処理で実施
+  updateQuantityById(
+    itemId: number,
+    quantity: Quantity,
+    transactionalEntityManager: EntityManager
+  ): Observable<{ quantity: number; updatedAt: Date }> {
+    const updatedAt = new Date();
+    return from(
+      transactionalEntityManager
+        .createQueryBuilder()
+        .update(Items)
+        .set({
+          quantity: quantity.value(),
+          updatedAt: updatedAt,
+        })
+        .where('id = :id', { id: itemId })
+        .execute()
+    ).pipe(
+      map((result) => {
+        if (result.affected === 0) {
+          throw new Error('更新された行がありません');
+        }
+        return {
+          quantity: quantity.value(),
+          updatedAt: updatedAt,
         };
       })
     );
