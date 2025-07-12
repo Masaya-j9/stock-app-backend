@@ -9,6 +9,7 @@ import { ItemSingleService } from '../../application/services/item/item.single.s
 import { DeletedItemListService } from '../../application/services/item/deleted.item.list.service';
 import { DeletedItemSingleService } from '../../application/services/item/deleted.item.single.service';
 import { ItemRestoreService } from '../../application/services/item/item.restore.service';
+import { UpdateItemQuantityService } from 'src/application/services/item/update.item.quantity.service';
 import { DatabaseModule } from './database.module';
 import { ItemsDatasource } from 'src/infrastructure/datasources/items/items.datasource';
 import { CategoriesModule } from './categories.module';
@@ -55,6 +56,10 @@ import { RabbitMQModule } from './rabbitmq.module';
     {
       provide: 'ItemRestoreServiceInterface',
       useClass: ItemRestoreService,
+    },
+    {
+      provide: 'UpdateItemQuantityServiceInterface',
+      useClass: UpdateItemQuantityService,
     },
   ],
 })

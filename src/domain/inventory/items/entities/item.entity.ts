@@ -195,4 +195,17 @@ export class Item {
       this._categoryIds
     );
   }
+
+  updateQuantity(quantity: number): Item {
+    return new Item(
+      this._id,
+      this._name,
+      quantity,
+      this._description,
+      this._createdAt,
+      new Date(),
+      this._deletedAt,
+      this._categoryIds
+    );
+  }
 }

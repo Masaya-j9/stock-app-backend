@@ -21,4 +21,11 @@ describe('Item Entity', () => {
       expect(item).toBeDefined();
     });
   });
+
+  describe('updateQuantity', () => {
+    it('should update the quantity of the item', () => {
+      const updated = item.updateQuantity(5);
+      expect(updated.quantity).toBe(5);
+    });
+  });
 });
