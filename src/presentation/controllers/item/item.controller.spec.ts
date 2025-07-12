@@ -8,6 +8,7 @@ import { ItemDeleteService } from '../../../application/services/item/item.delet
 import { ItemSingleService } from '../../../application/services/item/item.single.service';
 import { DeletedItemListService } from '../../../application/services/item/deleted.item.list.service';
 import { DeletedItemSingleService } from '../../../application/services/item/deleted.item.single.service';
+import { UpdateItemQuantityService } from '../../../application/services/item/update.item.quantity.service';
 import { ItemRestoreService } from '../../../application/services/item/item.restore.service';
 import { ItemRegisterServiceInterface } from '../../../application/services/item/item.register.interface';
 import { ItemUpdateServiceInterface } from '../../../application/services/item/item.update.interface';
@@ -16,6 +17,7 @@ import { DeletedItemSingleServiceInterface } from '../../../application/services
 import { ItemSingleServiceInterface } from '../../../application/services/item/item.single.interface';
 import { DeletedItemListServiceInterface } from '../../../application/services/item/deleted.item.list.interface';
 import { ItemRestoreServiceInterface } from '../../../application/services/item/item.restore.interface';
+import { UpdateItemQuantityServiceInterface } from '../../../application/services/item/update.item.quantity.interface';
 import { ItemListInputDto } from '../../../application/dto/input/item/item.list.input.dto';
 import { ItemListOutputDto } from '../../../application/dto/output/item/item.list.output.dto';
 import { ItemUpdateInputDto } from '../../../application/dto/input/item/item.update.input.dto';
@@ -30,6 +32,8 @@ import { DeletedItemListInputDto } from '../../../application/dto/input/item/del
 import { DeletedItemListOutputDto } from '../../../application/dto/output/item/deleted.item.list.output.dto';
 import { ItemRestoreInputDto } from '../../../application/dto/input/item/item.restore.input.dto';
 import { ItemRestoreOutputDto } from '../../../application/dto/output/item/item.restore.output.dto';
+import { UpdateItemQuantityInputDto } from '../../../application/dto/input/item/update.item.quantity.input.dto';
+import { UpdateItemQuantityOutputDto } from '../../../application/dto/output/item/update.item.quantity.output.dto';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { CategoriesDatasource } from '../../../infrastructure/datasources/categories/categories.datasource';
 import { of, throwError } from 'rxjs';
@@ -53,6 +57,7 @@ describe('ItemController', () => {
   let itemRestoreService: ItemRestoreServiceInterface;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
+  let updateItemQuantityService: UpdateItemQuantityServiceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -98,6 +103,10 @@ describe('ItemController', () => {
           useClass: ItemRestoreService,
         },
         {
+          provide: 'UpdateItemQuantityServiceInterface',
+          useClass: UpdateItemQuantityService,
+        },
+        {
           provide: ItemsDatasource,
           useValue: {
             findItemList: jest.fn(() => of([])),
@@ -112,6 +121,7 @@ describe('ItemController', () => {
             countDeletedAll: jest.fn(() => of(0)),
             findDeletedItemList: jest.fn(() => of([])),
             findDeletedItemById: jest.fn(() => of({})),
+            updateQuantityById: jest.fn(() => of({})),
             DataSource: {
               transaction: jest.fn((cb) => cb({})),
             },
@@ -151,6 +161,9 @@ describe('ItemController', () => {
     );
     itemRestoreService = module.get<ItemRestoreServiceInterface>(
       'ItemRestoreServiceInterface'
+    );
+    updateItemQuantityService = module.get<UpdateItemQuantityServiceInterface>(
+      'UpdateItemQuantityServiceInterface'
     );
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
@@ -1646,6 +1659,114 @@ describe('ItemController', () => {
           expect(err).toBeInstanceOf(BadRequestException);
           expect(err.response.statusCode).toBe(400);
           expect(err.response.message).toBe('Invalid itemId');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+  });
+
+  describe('updateItemQuantity', () => {
+    it('正常に物品の数量を更新できる', (done) => {
+      const input: UpdateItemQuantityInputDto = {
+        quantity: 11,
+      };
+      const itemId = 1;
+      const result: UpdateItemQuantityOutputDto = {
+        id: 1,
+        quantity: 11,
+        updatedAt: new Date(),
+      };
+      jest
+        .spyOn(updateItemQuantityService, 'service')
+        .mockImplementation(() => of(result));
+      controller.updateItemQuantity(itemId, input).subscribe({
+        next: (response) => {
+          expect(response).toEqual(result);
+          expect(response.id).toBe(result.id);
+          expect(response.quantity).toBe(result.quantity);
+        },
+        error: (err) => {
+          fail('Expected no error, but received an error: ' + err);
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品IDが存在しない場合、404エラーを返す', (done) => {
+      const input: UpdateItemQuantityInputDto = {
+        quantity: 11,
+      };
+      const itemId = 1;
+      jest
+        .spyOn(updateItemQuantityService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Item not found'))
+        );
+      controller.updateItemQuantity(itemId, input).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Item not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('指定した物品IDに関連するカテゴリが存在しない場合、404エラーを返す', (done) => {
+      const input: UpdateItemQuantityInputDto = {
+        quantity: 11,
+      };
+      const itemId = 1;
+      jest
+        .spyOn(updateItemQuantityService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new NotFoundException('Category not found'))
+        );
+      controller.updateItemQuantity(itemId, input).subscribe({
+        next: () => {
+          fail('Expected 404 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(NotFoundException);
+          expect(err.response.statusCode).toBe(404);
+          expect(err.response.message).toBe('Category not found');
+          done();
+        },
+        complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('更新後の数量が0以下の場合、400エラーを返す', (done) => {
+      const input: UpdateItemQuantityInputDto = {
+        quantity: 0,
+      };
+      const itemId = 1;
+      jest
+        .spyOn(updateItemQuantityService, 'service')
+        .mockImplementation(() =>
+          throwError(() => new BadRequestException('Invalid quantity'))
+        );
+      controller.updateItemQuantity(itemId, input).subscribe({
+        next: () => {
+          fail('Expected 400 error, but received results');
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(BadRequestException);
+          expect(err.response.statusCode).toBe(400);
+          expect(err.response.message).toBe('Invalid quantity');
           done();
         },
         complete: () => {
