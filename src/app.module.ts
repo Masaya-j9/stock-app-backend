@@ -7,6 +7,7 @@ import { ormConfig } from './infrastructure/orm/orm.config';
 import { HealthModule } from './presentation/modules/health.module';
 import { UserModule } from './presentation/modules/user.module';
 import { ItemsModule } from './presentation/modules/items.module';
+import { StocksModule } from './presentation/modules/stocks.module';
 import { LoggerInterceptor } from './common/utils/logger.inspector';
 import { DatabaseModule } from './presentation/modules/database.module';
 
@@ -16,6 +17,7 @@ import { DatabaseModule } from './presentation/modules/database.module';
     HealthModule,
     UserModule,
     ItemsModule,
+    StocksModule,
     DatabaseModule,
   ],
   controllers: [AppController],
