@@ -99,6 +99,27 @@ export class ItemsDatasource {
   }
 
   /**
+   * 物品IDの配列から物品情報を取得するクエリ
+   * @param itemIds - 物品IDの配列
+   * @returns Observable<Items[]> - 物品情報の配列
+   */
+  findItemsByIds(itemIds: number[]): Observable<Items[]> {
+    if (itemIds.length === 0) {
+      return of([]);
+    }
+
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select('*')
+        .from(Items, 'items')
+        .where('items.id IN (:...itemIds)', { itemIds })
+        .andWhere('items.deleted_at IS NULL')
+        .getRawMany()
+    );
+  }
+
+  /**
    * 物品IDからカテゴリIDをすべて取得するクエリ
    * @param itemId - 物品IDの配列
    * @returns Observable<number[]> - カテゴリIDの配列
