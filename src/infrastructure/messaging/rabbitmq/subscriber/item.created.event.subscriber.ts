@@ -13,7 +13,7 @@ export class ItemCreatedEventSubscriber {
   @RabbitSubscribe({
     exchange: 'stock.exchange',
     routingKey: 'item.created',
-    queue: 'stock.update.queue',
+    queue: 'stock.created.queue',
   })
   public async handleItemCreated(event: ItemCreatedEvent): Promise<void> {
     this.logger.log(`Received item created event for item ID: ${event.id}`);
