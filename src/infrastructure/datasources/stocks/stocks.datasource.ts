@@ -105,9 +105,60 @@ export class StocksDatasource {
           .createQueryBuilder()
           .select('stocks')
           .from(Stocks, 'stocks')
-          .where('stocks.item = :itemId', { itemId })
+          .where('stocks.item_id = :itemId', { itemId })
           .getOne()
       )
     );
+  }
+
+  /**
+   * 物品IDと数量を指定して、既存の在庫情報を更新
+   * @param itemId - 物品ID
+   * @param quantity - 更新する数量
+   * @param description - 更新する説明文
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<Stocks>
+   */
+  updateStockQuantityByItemId(
+    itemId: number,
+    quantity: number,
+    description: string
+  ): Observable<void> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .update(Stocks)
+        .set({
+          quantity: quantity,
+          description: description,
+          updatedAt: new Date(),
+        })
+        .where('item_id = :itemId', { itemId }) // stocks.item を item_id に修正
+        .execute()
+    ).pipe(map(() => undefined));
+  }
+
+  /**
+   * 物品IDと数量のみを指定して、既存の在庫情報を更新
+   * @param itemId - 物品ID
+   * @param quantity - 更新する数量
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<Stocks>
+   */
+  updateStockQuantityOnlyById(
+    itemId: number,
+    quantity: number
+  ): Observable<void> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .update(Stocks)
+        .set({
+          quantity: quantity,
+          updatedAt: new Date(),
+        })
+        .where('item_id = :itemId', { itemId }) // stocks.item を item_id に修正
+        .execute()
+    ).pipe(map(() => undefined));
   }
 }
