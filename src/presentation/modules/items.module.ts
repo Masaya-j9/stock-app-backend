@@ -14,8 +14,8 @@ import { DatabaseModule } from './database.module';
 import { ItemsDatasource } from 'src/infrastructure/datasources/items/items.datasource';
 import { CategoriesModule } from './categories.module';
 import { RabbitMQModule } from './rabbitmq.module';
-import { RabbitMQItemCreatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item-created-event.publisher';
-import { ItemCreatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item-created-event.subscriber';
+import { RabbitMQItemCreatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.created.event.publisher';
+import { ItemCreatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.createdl.event.subscriber';
 import { StocksModule } from './stocks.module';
 
 @Module({
