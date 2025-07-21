@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
-import { DataSource } from 'typeorm';
+import { DataSource, EntityManager } from 'typeorm';
 import { Stocks } from '../../orm/entities/stocks.entity';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, map, Observable, of, switchMap } from 'rxjs';
@@ -66,5 +66,48 @@ export class StocksDatasource {
         .where('stocks.deleted_at IS NULL')
         .getRawOne()
     ).pipe(map((result) => parseInt(result.count, 10)));
+  }
+
+  /**
+   * 物品IDと数量を指定して在庫を更新、または新規作成する
+   * @param itemId - 対象の物品ID
+   * @param quantity - 設定する数量
+   * @param description - 説明文（オプション）
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<Stocks>
+   */
+  updateStockQuantityByItemId(
+    itemId: number,
+    quantity: number,
+    description?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<Stocks> {
+    const queryRunner = transactionalEntityManager || this.dataSource.manager;
+    const now = new Date();
+
+    return from(
+      queryRunner
+        .createQueryBuilder()
+        .insert()
+        .into(Stocks)
+        .values({
+          item: { id: itemId },
+          quantity: quantity,
+          description: description || null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .orUpdate(['quantity', 'description', 'updated_at'], ['item_id'])
+        .execute()
+    ).pipe(
+      switchMap(() =>
+        queryRunner
+          .createQueryBuilder()
+          .select('stocks')
+          .from(Stocks, 'stocks')
+          .where('stocks.item = :itemId', { itemId })
+          .getOne()
+      )
+    );
   }
 }

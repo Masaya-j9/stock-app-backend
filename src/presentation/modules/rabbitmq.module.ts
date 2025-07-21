@@ -1,21 +1,38 @@
 import { Module } from '@nestjs/common';
-import { ClientsModule, Transport } from '@nestjs/microservices';
+import { RabbitMQModule as NestRabbitMQModule } from '@golevelup/nestjs-rabbitmq';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
 @Module({
   imports: [
-    ClientsModule.register([
-      {
-        name: 'ITEMS_RMQ_SERVICE', // サービス名は関心事ごとに変えてOK
-        transport: Transport.RMQ,
-        options: {
-          urls: [process.env.RABBITMQ_URI || 'amqp://user:pass@rabbitmq:5672'], // docker-composeに合わせて修正
-          queue: 'inventory_queue',
-          queueOptions: {
-            durable: true,
+    NestRabbitMQModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        uri: configService.get('RABBITMQ_URI'),
+        exchanges: [
+          {
+            name: 'stock.exchange',
+            type: 'topic',
+          },
+        ],
+        queues: [
+          {
+            name: 'stock.update.queue',
+            exchange: 'stock.exchange',
+            routingKey: 'item.created',
+          },
+        ],
+        connectionInitOptions: { wait: false },
+        enableControllerDiscovery: true,
+        channels: {
+          default: {
+            prefetchCount: 1,
+            default: true,
           },
         },
-      },
-    ]),
+      }),
+    }),
   ],
-  exports: [ClientsModule],
+  exports: [NestRabbitMQModule],
 })
 export class RabbitMQModule {}
