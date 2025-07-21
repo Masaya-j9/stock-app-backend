@@ -14,6 +14,9 @@ import { DatabaseModule } from './database.module';
 import { ItemsDatasource } from 'src/infrastructure/datasources/items/items.datasource';
 import { CategoriesModule } from './categories.module';
 import { RabbitMQModule } from './rabbitmq.module';
+import { RabbitMQItemCreatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item-created-event.publisher';
+import { ItemCreatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item-created-event.subscriber';
+import { StocksModule } from './stocks.module';
 
 @Module({
   imports: [
@@ -21,10 +24,16 @@ import { RabbitMQModule } from './rabbitmq.module';
     TypeOrmModule.forFeature([]),
     CategoriesModule,
     RabbitMQModule,
+    StocksModule, // StocksModuleをインポート
   ],
   controllers: [ItemController],
   providers: [
     ItemsDatasource,
+    ItemCreatedEventSubscriber,
+    {
+      provide: 'ItemCreatedEventPublisherInterface',
+      useClass: RabbitMQItemCreatedEventPublisher,
+    },
     {
       provide: 'ItemListServiceInterface',
       useClass: ItemListService,
