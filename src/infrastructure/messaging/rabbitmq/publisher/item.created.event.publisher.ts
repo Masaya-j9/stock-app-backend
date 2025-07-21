@@ -5,7 +5,7 @@ import { map, catchError } from 'rxjs/operators';
 import {
   ItemCreatedEvent,
   ItemCreatedEventPublisherInterface,
-} from '../../../../application/services/item/item-created-event.publisher.interface';
+} from '../../../../application/services/item/events/item.created.event.publisher.interface';
 
 @Injectable()
 export class RabbitMQItemCreatedEventPublisher

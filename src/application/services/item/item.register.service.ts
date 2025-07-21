@@ -27,7 +27,7 @@ import { Item } from '../../../domain/inventory/items/entities/item.entity';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
 import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
 import { Logger } from '@nestjs/common';
-import { ItemCreatedEventPublisherInterface } from '../../../application/services/item/item-created-event.publisher.interface';
+import { ItemCreatedEventPublisherInterface } from './events/item.created.event.publisher.interface';
 
 @Injectable()
 export class ItemRegisterService implements ItemRegisterServiceInterface {

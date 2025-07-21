@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { StocksDatasource } from '../../../datasources/stocks/stocks.datasource';
-import { ItemCreatedEvent } from '../../../../application/services/item/item-created-event.publisher.interface';
+import { ItemCreatedEvent } from '../../../../application/services/item/events/item.created.event.publisher.interface';
 import { catchError, firstValueFrom } from 'rxjs';
 
 @Injectable()
