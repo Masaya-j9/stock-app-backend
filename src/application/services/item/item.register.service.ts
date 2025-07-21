@@ -3,6 +3,7 @@ import {
   NotFoundException,
   Injectable,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
 import { ItemRegisterServiceInterface } from './item.register.interface';
 import {
@@ -23,16 +24,19 @@ import { Unique } from '../../../domain/common/value-objects/unique';
 import { TextAmount } from '../../../domain/inventory/items/value-objects/text.amount';
 import { Quantity } from '../../../domain/inventory/items/value-objects/quantity';
 import { Item } from '../../../domain/inventory/items/entities/item.entity';
+import { Items } from '../../../infrastructure/orm/entities/items.entity';
 import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
 import { Logger } from '@nestjs/common';
+import { ItemCreatedEventPublisherInterface } from '../../../application/services/item/item-created-event.publisher.interface';
 
 @Injectable()
 export class ItemRegisterService implements ItemRegisterServiceInterface {
-  private readonly logger = new Logger(ItemRegisterService.name);
-
   constructor(
     public readonly itemsDatasource: ItemsDatasource,
-    public readonly categoriesDatasource: CategoriesDatasource
+    public readonly categoriesDatasource: CategoriesDatasource,
+    @Inject('ItemCreatedEventPublisherInterface')
+    public readonly itemCreatedPublisher: ItemCreatedEventPublisherInterface,
+    private readonly logger: Logger
   ) {}
 
   service(input: ItemRegisterInputDto): Observable<ItemRegisterOutputDto> {
@@ -142,7 +146,7 @@ export class ItemRegisterService implements ItemRegisterServiceInterface {
           transactionalEntityManager
         )
         .pipe(
-          switchMap((newItem) =>
+          switchMap((newItem: Items) =>
             this.itemsDatasource
               .createItemCategoryWithinTransaction(
                 newItem.id,
@@ -150,26 +154,17 @@ export class ItemRegisterService implements ItemRegisterServiceInterface {
                 transactionalEntityManager
               )
               .pipe(
-                map(() => {
-                  this.logger.log(
-                    `'Item registered successfully!' ${newItem.id}`
-                  );
-                  const builder = new ItemRegisterOutputBuilder(
-                    newItem.id,
-                    newItem.name,
-                    newItem.quantity,
-                    newItem.description,
-                    newItem.createdAt,
-                    newItem.updatedAt,
-                    categories
-                  );
-                  subscriber.next(builder.build());
-                  subscriber.complete();
-                })
+                switchMap(() =>
+                  this.publishItemCreatedEvent(newItem, categoryIds, categories)
+                )
               )
           )
         )
         .subscribe({
+          next: (output) => {
+            subscriber.next(output);
+            subscriber.complete();
+          },
           error: (error) => {
             this.logger.error(
               'Transaction error during item registration:',
@@ -183,5 +178,41 @@ export class ItemRegisterService implements ItemRegisterServiceInterface {
           },
         });
     });
+  }
+
+  /**
+   * アイテム作成イベントをpublishする
+   */
+  private publishItemCreatedEvent(
+    newItem: Items,
+    categoryIds: number[],
+    categories: Categories[]
+  ): Observable<ItemRegisterOutputDto> {
+    return this.itemCreatedPublisher
+      .publishItemCreatedEvent({
+        id: newItem.id,
+        name: newItem.name,
+        quantity: newItem.quantity,
+        description: newItem.description,
+        createdAt: newItem.createdAt,
+        updatedAt: newItem.updatedAt,
+        categoryIds: categoryIds,
+      })
+      .pipe(
+        map(() => {
+          this.logger.log(
+            `Item registered & event published! ID: ${newItem.id}`
+          );
+          return new ItemRegisterOutputBuilder(
+            newItem.id,
+            newItem.name,
+            newItem.quantity,
+            newItem.description,
+            newItem.createdAt,
+            newItem.updatedAt,
+            categories
+          ).build();
+        })
+      );
   }
 }

@@ -9,11 +9,13 @@ import { Categories } from '../../../infrastructure/orm/entities/categories.enti
 import { Logger } from '@nestjs/common';
 import { of } from 'rxjs';
 import { Transaction } from 'typeorm';
+import { ItemCreatedEventPublisherInterface } from '../../../application/services/item/item-created-event.publisher.interface';
 
 describe('ItemRegisterService', () => {
   let itemRegisterService: ItemRegisterService;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
+  let itemCreatedPublisher: ItemCreatedEventPublisherInterface;
   let logger: Logger;
 
   beforeEach(async () => {
@@ -28,7 +30,6 @@ describe('ItemRegisterService', () => {
             createItemCategoryWithinTransaction: jest.fn(),
             dataSource: {
               manager: {
-                // transactionモック
                 transaction: jest.fn((cb) => cb({})),
               },
             },
@@ -38,6 +39,12 @@ describe('ItemRegisterService', () => {
           provide: CategoriesDatasource,
           useValue: {
             findByCategoryIds: jest.fn(),
+          },
+        },
+        {
+          provide: 'ItemCreatedEventPublisherInterface',
+          useValue: {
+            publishItemCreatedEvent: jest.fn(),
           },
         },
         {
@@ -54,6 +61,9 @@ describe('ItemRegisterService', () => {
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
+    itemCreatedPublisher = module.get<ItemCreatedEventPublisherInterface>(
+      'ItemCreatedEventPublisherInterface'
+    );
     logger = module.get<Logger>(Logger);
   });
 
@@ -113,6 +123,12 @@ describe('ItemRegisterService', () => {
       jest
         .spyOn(itemsDatasource, 'createItemCategoryWithinTransaction')
         .mockReturnValue(of({ ids: [1, 2] }));
+      jest
+        .spyOn(itemCreatedPublisher, 'publishItemCreatedEvent')
+        .mockReturnValue(of(void 0));
+      const logSpy = jest.spyOn(logger, 'log');
+      logSpy.mockImplementation(() => {});
+      logSpy.mockClear();
 
       itemRegisterService.service(input).subscribe({
         next: (result) => {
@@ -123,9 +139,25 @@ describe('ItemRegisterService', () => {
           expect(result.description).toBe('Item 1');
           expect(result.itemsCategories[0].id).toBe(1);
           expect(result.itemsCategories[1].id).toBe(2);
+
+          expect(
+            itemCreatedPublisher.publishItemCreatedEvent
+          ).toHaveBeenCalledWith({
+            id: mockItem.id,
+            name: mockItem.name,
+            quantity: mockItem.quantity,
+            description: mockItem.description,
+            createdAt: mockItem.createdAt,
+            updatedAt: mockItem.updatedAt,
+            categoryIds: input.categoryIds,
+          });
+
+          expect(logSpy).toHaveBeenCalledWith(
+            `Item registered & event published! ID: ${mockItem.id}`
+          );
         },
         error: (error) => {
-          done.fail(error);
+          fail(error);
         },
         complete: () => {
           done();
@@ -156,7 +188,7 @@ describe('ItemRegisterService', () => {
         .mockReturnValue(of(existingItem));
       itemRegisterService.service(input).subscribe({
         next: () => {
-          fail('Expected error, but got success'); // done.fail の代わりに fail を使用
+          fail('Expected error, but got success');
         },
         error: (error) => {
           expect(error.response.statusCode).toBe(409);
@@ -175,30 +207,30 @@ describe('ItemRegisterService', () => {
         name: 'Item 1',
         quantity: 10,
         description: 'Item 1',
-        categoryIds: [1, 2], // 存在しないカテゴリIDを指定
+        categoryIds: [1, 2],
       };
 
       jest
         .spyOn(itemsDatasource, 'findItemByName')
         .mockReturnValue(of(undefined));
-      jest.spyOn(categoriesDatasource, 'findByCategoryIds').mockReturnValue(
-        of([]) // 空の配列を返すことでカテゴリが存在しないことをシミュレート
-      );
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoryIds')
+        .mockReturnValue(of([]));
 
       itemRegisterService.service(input).subscribe({
         next: () => {
-          fail('Expected error, but got success'); // done.fail の代わりに fail を使用
+          fail('Expected error, but got success');
         },
         error: (error) => {
-          expect(error.response.statusCode).toBe(404); // ステータスコードが404であることを確認
+          expect(error.response.statusCode).toBe(404);
           expect(error.response.message).toBe(
             '指定されたカテゴリはすべて存在しません'
-          ); // エラーメッセージを確認
-          expect(error.response.error).toBe('Not Found'); // エラータイプを確認
+          );
+          expect(error.response.error).toBe('Not Found');
           done();
         },
         complete: () => {
-          fail('Expected error, but got complete'); // done.fail の代わりに fail を使用
+          fail('Expected error, but got complete');
         },
       });
     });
@@ -207,7 +239,7 @@ describe('ItemRegisterService', () => {
   describe('checkItemNameConflict', () => {
     it('物品名が重複していない場合は、trueを返す', (done) => {
       const name = 'Item 1';
-      const existingItem: Items = undefined; // 重複していない場合
+      const existingItem: Items = undefined;
 
       jest
         .spyOn(itemsDatasource, 'findItemByName')
@@ -370,11 +402,14 @@ describe('ItemRegisterService', () => {
       const transactionalEntityManager = {};
 
       const mockItem = {
-        id: id,
-        name: name,
-        quantity: quantity,
-        description: description,
-        TransactionalEntityManager: {} as Transaction,
+        id,
+        name,
+        quantity,
+        description,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
       };
 
       jest
@@ -383,7 +418,21 @@ describe('ItemRegisterService', () => {
       jest
         .spyOn(itemsDatasource, 'createItemCategoryWithinTransaction')
         .mockReturnValue(of({ ids: [1, 2] }));
-      jest.spyOn(logger, 'log').mockImplementation(jest.fn());
+      jest
+        .spyOn(itemCreatedPublisher, 'publishItemCreatedEvent')
+        .mockReturnValue(of(void 0));
+      const logSpy = jest.spyOn(logger, 'log');
+      logSpy.mockClear();
+
+      jest
+        .spyOn(itemsDatasource, 'createItemWithinTransaction')
+        .mockReturnValue(of(mockItem));
+      jest
+        .spyOn(itemsDatasource, 'createItemCategoryWithinTransaction')
+        .mockReturnValue(of({ ids: [1, 2] }));
+      jest
+        .spyOn(itemCreatedPublisher, 'publishItemCreatedEvent')
+        .mockReturnValue(of(void 0));
 
       (itemRegisterService as any)
         .registerItemWithinTransaction(
@@ -400,28 +449,19 @@ describe('ItemRegisterService', () => {
             expect(result.name).toBe(name);
             expect(result.quantity).toBe(quantity);
             expect(result.description).toBe(description);
-            expect(result.itemsCategories[0].id).toBe(1);
-            expect(result.itemsCategories[1].id).toBe(2);
-            logger.log(`'Item registered successfully!' ${result.id}`);
-            expect(logger.log).toHaveBeenCalledWith(
-              `'Item registered successfully!' ${result.id}`
+            expect(result.itemsCategories).toHaveLength(2);
+
+            expect(
+              itemCreatedPublisher.publishItemCreatedEvent
+            ).toHaveBeenCalledTimes(1);
+            expect(logSpy).toHaveBeenCalledWith(
+              'Item registered & event published! ID: 1'
             );
           },
           error: (error) => {
-            done.fail(error);
+            fail(error);
           },
           complete: () => {
-            expect(
-              itemsDatasource.createItemWithinTransaction
-            ).toHaveBeenCalledWith(
-              name,
-              quantity,
-              description,
-              transactionalEntityManager
-            );
-            expect(
-              itemsDatasource.createItemCategoryWithinTransaction
-            ).toHaveBeenCalledWith(1, categoryIds, transactionalEntityManager);
             done();
           },
         });

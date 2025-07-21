@@ -44,6 +44,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Categories } from '../../../infrastructure/orm/entities/categories.entity';
+import { Logger } from '@nestjs/common';
 
 describe('ItemController', () => {
   let controller: ItemController;
@@ -132,6 +133,22 @@ describe('ItemController', () => {
           useValue: {
             findByCategoryIds: jest.fn(() => of([])),
             findCategoriesByItemId: jest.fn(() => of([])),
+          },
+        },
+        {
+          provide: 'ItemCreatedEventPublisherInterface',
+          useValue: {
+            publishItemCreatedEvent: jest.fn(() => of(undefined)),
+          },
+        },
+        {
+          provide: Logger,
+          useValue: {
+            log: jest.fn(),
+            error: jest.fn(),
+            warn: jest.fn(),
+            debug: jest.fn(),
+            verbose: jest.fn(),
           },
         },
       ],
