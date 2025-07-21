@@ -8,27 +8,25 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        uri: configService.get('RABBITMQ_URI'),
+        uri: configService.get<string>('RABBITMQ_URI'),
         exchanges: [
           {
-            name: 'stock.exchange',
+            name: 'item.created',
+            type: 'topic',
+          },
+          {
+            name: 'item.updated',
+            type: 'topic',
+          },
+          {
+            name: 'item.quantity.updated',
             type: 'topic',
           },
         ],
-        queues: [
-          {
-            name: 'stock.update.queue',
-            exchange: 'stock.exchange',
-            routingKey: 'item.created',
-          },
-        ],
-        connectionInitOptions: { wait: false },
-        enableControllerDiscovery: true,
-        channels: {
-          default: {
-            prefetchCount: 1,
-            default: true,
-          },
+        connectionInitOptions: {
+          wait: true,
+          reject: true,
+          timeout: 3000,
         },
       }),
     }),
