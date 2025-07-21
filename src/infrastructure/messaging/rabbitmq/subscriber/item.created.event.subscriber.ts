@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { StocksDatasource } from '../../../datasources/stocks/stocks.datasource';
-import { ItemCreatedEvent } from '../../../../application/services/item/item-created-event.publisher.interface';
+import { ItemCreatedEvent } from '../../../../application/services/item/events/item.created.event.publisher.interface';
 import { catchError, firstValueFrom } from 'rxjs';
 
 @Injectable()
@@ -13,7 +13,7 @@ export class ItemCreatedEventSubscriber {
   @RabbitSubscribe({
     exchange: 'stock.exchange',
     routingKey: 'item.created',
-    queue: 'stock.update.queue',
+    queue: 'stock.created.queue',
   })
   public async handleItemCreated(event: ItemCreatedEvent): Promise<void> {
     this.logger.log(`Received item created event for item ID: ${event.id}`);
@@ -21,7 +21,7 @@ export class ItemCreatedEventSubscriber {
     // RxJSのObservableを使用して在庫更新を実行
     await firstValueFrom(
       this.stocksDatasource
-        .updateStockQuantityByItemId(
+        .createStockQuantityByItemId(
           event.id,
           event.quantity,
           event.description

@@ -142,6 +142,18 @@ describe('ItemController', () => {
           },
         },
         {
+          provide: 'ItemUpdatedEventPublisherInterface',
+          useValue: {
+            publishItemUpdatedEvent: jest.fn(() => of(undefined)),
+          },
+        },
+        {
+          provide: 'ItemQuantityUpdatedEventPublisherInterface',
+          useValue: {
+            publishItemQuantityUpdatedEvent: jest.fn(() => of(undefined)),
+          },
+        },
+        {
           provide: Logger,
           useValue: {
             log: jest.fn(),
@@ -1687,30 +1699,30 @@ describe('ItemController', () => {
 
   describe('updateItemQuantity', () => {
     it('正常に物品の数量を更新できる', (done) => {
-      const input: UpdateItemQuantityInputDto = {
-        quantity: 11,
-      };
       const itemId = 1;
-      const result: UpdateItemQuantityOutputDto = {
-        id: 1,
-        quantity: 11,
+      const input: UpdateItemQuantityInputDto = {
+        quantity: 10,
+      };
+      const output: UpdateItemQuantityOutputDto = {
+        id: itemId,
+        quantity: 10,
         updatedAt: new Date(),
       };
+
       jest
         .spyOn(updateItemQuantityService, 'service')
-        .mockImplementation(() => of(result));
+        .mockReturnValue(of(output));
+
       controller.updateItemQuantity(itemId, input).subscribe({
-        next: (response) => {
-          expect(response).toEqual(result);
-          expect(response.id).toBe(result.id);
-          expect(response.quantity).toBe(result.quantity);
-        },
-        error: (err) => {
-          fail('Expected no error, but received an error: ' + err);
-        },
-        complete: () => {
+        next: (result) => {
+          expect(result).toEqual(output);
+          expect(updateItemQuantityService.service).toHaveBeenCalledWith(
+            input,
+            itemId
+          );
           done();
         },
+        error: (error) => done(error),
       });
     });
 

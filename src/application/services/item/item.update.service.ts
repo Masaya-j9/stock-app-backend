@@ -4,6 +4,7 @@ import {
   NotFoundException,
   InternalServerErrorException,
   ConflictException,
+  Inject,
 } from '@nestjs/common';
 import {
   forkJoin,
@@ -16,7 +17,7 @@ import {
   of,
   catchError,
   map,
-  Subscriber,
+  firstValueFrom,
 } from 'rxjs';
 import { ItemUpdateServiceInterface } from './item.update.interface';
 import { ItemUpdateInputDto } from '../../dto/input/item/item.update.input.dto';
@@ -37,7 +38,9 @@ import {
   ItemNotFoundOperator,
   CategoryIdsNotFoundOperator,
   ItemNameUniqueOperator,
+  UpdateItemFailedOperator,
 } from '../../../common/types/rxjs-operator.types';
+import { ItemUpdatedEventPublisherInterface } from './events/item.updated.event.publisher.interface';
 
 @Injectable()
 export class ItemUpdateService implements ItemUpdateServiceInterface {
@@ -45,7 +48,9 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
 
   constructor(
     public readonly itemsDatasource: ItemsDatasource,
-    public readonly categoriesDatasource: CategoriesDatasource
+    public readonly categoriesDatasource: CategoriesDatasource,
+    @Inject('ItemUpdatedEventPublisherInterface')
+    public readonly itemUpdatedPublisher: ItemUpdatedEventPublisherInterface
   ) {}
 
   /**
@@ -133,12 +138,14 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
     return new Observable<ItemUpdateOutputDto>((subscriber) => {
       this.itemsDatasource.dataSource.manager
         .transaction((transactionalEntityManager) => {
-          return this.updateItemWithinTransactionObservable(
-            updatedDomainItem,
-            addIds,
-            deleteIds,
-            transactionalEntityManager
-          ).toPromise();
+          return firstValueFrom(
+            this.updateItemWithinTransactionObservable(
+              updatedDomainItem,
+              addIds,
+              deleteIds,
+              transactionalEntityManager
+            )
+          );
         })
         .then((result) => {
           subscriber.next(result);
@@ -166,42 +173,14 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
       )
       .pipe(
         this.throwIfUpdateItemFailed(),
-        switchMap(() => {
-          if (addIds.length > 0 || deleteIds.length > 0) {
-            return this.itemsDatasource
-              .updateItemCategoriesWithinTransactionQuery(
-                updatedDomainItem.id,
-                addIds,
-                deleteIds,
-                transactionalEntityManager
-              )
-              .pipe(
-                switchMap((result) =>
-                  this.categoriesDatasource
-                    .findByCategoryIds(result.categoryIds)
-                    .pipe(
-                      map((updatedCategories) =>
-                        this.buildItemUpdateOutput(
-                          updatedDomainItem,
-                          updatedCategories
-                        )
-                      )
-                    )
-                )
-              );
-          } else {
-            return this.categoriesDatasource
-              .findByCategoryIds([])
-              .pipe(
-                map((updatedCategories) =>
-                  this.buildItemUpdateOutput(
-                    updatedDomainItem,
-                    updatedCategories
-                  )
-                )
-              );
-          }
-        })
+        switchMap(() =>
+          this.handleCategoryUpdatesAndPublishEvent(
+            updatedDomainItem,
+            addIds,
+            deleteIds,
+            transactionalEntityManager
+          )
+        )
       );
   }
 
@@ -253,23 +232,6 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
         )
       );
 
-  private emitItemUpdate(
-    subscriber: Subscriber<ItemUpdateOutputDto>,
-    item: Item,
-    categories: Categories[]
-  ): void {
-    const builder = new ItemUpdateOutputBuilder(
-      item.id,
-      item.name,
-      item.quantity,
-      item.description,
-      item.updatedAt,
-      categories
-    );
-    subscriber.next(builder.build());
-    subscriber.complete();
-  }
-
   private tryUpdateDomainItem(
     domainItem: Item,
     name: string,
@@ -291,7 +253,7 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
         })();
   }
 
-  private throwIfUpdateItemFailed = () => (source$) =>
+  private throwIfUpdateItemFailed = (): UpdateItemFailedOperator => (source$) =>
     source$.pipe(
       mergeMap((updatedItem) =>
         updatedItem
@@ -315,5 +277,80 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
       categories
     );
     return builder.build();
+  }
+
+  /**
+   * カテゴリ更新とイベント発行を処理する
+   */
+  private handleCategoryUpdatesAndPublishEvent(
+    updatedDomainItem: Item,
+    addIds: number[],
+    deleteIds: number[],
+    transactionalEntityManager: any
+  ): Observable<ItemUpdateOutputDto> {
+    if (addIds.length > 0 || deleteIds.length > 0) {
+      return this.itemsDatasource
+        .updateItemCategoriesWithinTransactionQuery(
+          updatedDomainItem.id,
+          addIds,
+          deleteIds,
+          transactionalEntityManager
+        )
+        .pipe(
+          switchMap((result) =>
+            this.categoriesDatasource
+              .findByCategoryIds(result.categoryIds)
+              .pipe(
+                switchMap((updatedCategories) =>
+                  this.publishItemUpdatedEvent(
+                    updatedDomainItem,
+                    result.categoryIds,
+                    updatedCategories
+                  )
+                )
+              )
+          )
+        );
+    } else {
+      return this.categoriesDatasource
+        .findByCategoryIds(updatedDomainItem.categoryIds)
+        .pipe(
+          switchMap((updatedCategories) =>
+            this.publishItemUpdatedEvent(
+              updatedDomainItem,
+              updatedDomainItem.categoryIds,
+              updatedCategories
+            )
+          )
+        );
+    }
+  }
+
+  /**
+   * アイテム更新イベントをpublishする（在庫情報の非同期更新用）
+   */
+  private publishItemUpdatedEvent(
+    updatedItem: Item,
+    categoryIds: number[],
+    categories: Categories[]
+  ): Observable<ItemUpdateOutputDto> {
+    return this.itemUpdatedPublisher
+      .publishItemUpdatedEvent({
+        id: updatedItem.id,
+        name: updatedItem.name,
+        quantity: updatedItem.quantity,
+        description: updatedItem.description,
+        createdAt: updatedItem.createdAt,
+        updatedAt: updatedItem.updatedAt,
+        categoryIds: categoryIds,
+      })
+      .pipe(
+        map(() => {
+          this.logger.log(
+            `Item updated & event published! ID: ${updatedItem.id}`
+          );
+          return this.buildItemUpdateOutput(updatedItem, categories);
+        })
+      );
   }
 }

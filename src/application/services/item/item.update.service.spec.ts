@@ -16,12 +16,14 @@ import { Categories } from '../../../infrastructure/orm/entities/categories.enti
 import { Item } from '../../../domain/inventory/items/entities/item.entity';
 
 import { of, throwError } from 'rxjs';
+import { ItemUpdatedEventPublisherInterface } from './events/item.updated.event.publisher.interface';
 
 describe('ItemUpdateService', () => {
   let itemUpdateService: ItemUpdateService;
   let itemsDatasource: ItemsDatasource;
   let categoriesDatasource: CategoriesDatasource;
   let logger: Logger;
+  let itemUpdatedPublisher: ItemUpdatedEventPublisherInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -55,6 +57,12 @@ describe('ItemUpdateService', () => {
             error: jest.fn(),
           },
         },
+        {
+          provide: 'ItemUpdatedEventPublisherInterface',
+          useValue: {
+            publishItemUpdatedEvent: jest.fn(() => of(void 0)),
+          },
+        },
       ],
     }).compile();
 
@@ -63,6 +71,9 @@ describe('ItemUpdateService', () => {
     categoriesDatasource =
       module.get<CategoriesDatasource>(CategoriesDatasource);
     logger = module.get<Logger>(Logger);
+    itemUpdatedPublisher = module.get<ItemUpdatedEventPublisherInterface>(
+      'ItemUpdatedEventPublisherInterface'
+    );
   });
 
   it('should be defined', () => {
@@ -545,6 +556,127 @@ describe('ItemUpdateService', () => {
           done();
         },
         complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品更新後にイベントが発行されることを確認', (done) => {
+      const inputItemId = 1;
+      const itemUpdateInputDto: ItemUpdateInputDto = {
+        name: 'updatedItemName',
+        quantity: 11,
+        description: 'updatedItemDescription',
+        categoryIds: [1, 2],
+      };
+
+      // 更新前のアイテム (異なる名前)
+      const mockExistingItem: Items = {
+        id: inputItemId,
+        name: 'differentName', // 重要: 更新前の名前は異なるものにする
+        quantity: 10,
+        description: 'itemDescription',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+
+      // 更新後のアイテム
+      const mockUpdatedItem: Items = {
+        id: inputItemId,
+        name: itemUpdateInputDto.name,
+        quantity: itemUpdateInputDto.quantity,
+        description: itemUpdateInputDto.description,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+
+      // 重複チェック用のモックを追加
+      jest
+        .spyOn(itemsDatasource, 'findItemById')
+        .mockReturnValue(of(mockExistingItem));
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of([1, 2]));
+      jest
+        .spyOn(itemsDatasource, 'updateItemWithinTransactionQuery')
+        .mockReturnValue(of(mockUpdatedItem));
+      jest
+        .spyOn(itemsDatasource, 'updateItemCategoriesWithinTransactionQuery')
+        .mockReturnValue(of({ categoryIds: [1, 2] }));
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoryIds')
+        .mockReturnValue(of([]));
+      const publishSpy = jest.spyOn(
+        itemUpdatedPublisher,
+        'publishItemUpdatedEvent'
+      );
+
+      itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
+        next: () => {
+          expect(publishSpy).toHaveBeenCalledWith({
+            id: mockUpdatedItem.id,
+            name: mockUpdatedItem.name,
+            quantity: mockUpdatedItem.quantity,
+            description: mockUpdatedItem.description,
+            createdAt: mockUpdatedItem.createdAt,
+            updatedAt: mockUpdatedItem.updatedAt,
+            categoryIds: [1, 2],
+          });
+          done();
+        },
+        error: (error) => done(error),
+      });
+    });
+
+    it('イベント発行に失敗した場合、エラーを返す', (done) => {
+      const inputItemId = 1;
+      const itemUpdateInputDto: ItemUpdateInputDto = {
+        name: 'updatedItemName',
+        quantity: 11,
+        description: 'updatedItemDescription',
+        categoryIds: [1, 2],
+      };
+      const mockItems: Items = {
+        id: 1,
+        name: 'currentItemName',
+        quantity: 10,
+        description: 'itemDescription',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+
+      jest
+        .spyOn(itemsDatasource, 'findItemById')
+        .mockReturnValue(of(mockItems));
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of([1, 2]));
+      jest
+        .spyOn(itemsDatasource, 'updateItemWithinTransactionQuery')
+        .mockReturnValue(of(mockItems));
+      jest
+        .spyOn(itemsDatasource, 'updateItemCategoriesWithinTransactionQuery')
+        .mockReturnValue(of({ categoryIds: [1, 2] }));
+      jest
+        .spyOn(categoriesDatasource, 'findByCategoryIds')
+        .mockReturnValue(of([]));
+      jest
+        .spyOn(itemUpdatedPublisher, 'publishItemUpdatedEvent')
+        .mockReturnValue(
+          throwError(() => new Error('Failed to publish event'))
+        );
+
+      itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
+        next: () => done.fail('Expected error but got success'),
+        error: (error) => {
+          expect(error).toBeInstanceOf(InternalServerErrorException);
+          expect(error.message).toBe('更新処理中にエラーが発生しました');
           done();
         },
       });

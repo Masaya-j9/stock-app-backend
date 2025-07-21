@@ -40,3 +40,8 @@ export type CategoryUpdateConflictOperator = OperatorFunction<
   Category | null | undefined,
   Category
 >;
+
+export type UpdateItemFailedOperator = OperatorFunction<
+  Items | undefined,
+  Items
+>;

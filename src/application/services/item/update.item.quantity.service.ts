@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, Logger } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger, Inject } from '@nestjs/common';
 import {
   forkJoin,
   Observable,
@@ -9,7 +9,7 @@ import {
   mergeMap,
   from,
   firstValueFrom,
-  of,
+  map,
 } from 'rxjs';
 import { UpdateItemQuantityServiceInterface } from './update.item.quantity.interface';
 import { UpdateItemQuantityInputDto } from '../../dto/input/item/update.item.quantity.input.dto';
@@ -25,6 +25,7 @@ import {
   ItemNotFoundOperator,
   CategoryIdsNotFoundOperator,
 } from '../../../common/types/rxjs-operator.types';
+import { ItemQuantityUpdatedEventPublisherInterface } from './events/item.quantity.updated.event.publisher.interface';
 
 @Injectable()
 export class UpdateItemQuantityService
@@ -34,7 +35,9 @@ export class UpdateItemQuantityService
 
   constructor(
     public readonly itemsDatasource: ItemsDatasource,
-    public readonly categoriesDatasource: CategoriesDatasource
+    public readonly categoriesDatasource: CategoriesDatasource,
+    @Inject('ItemQuantityUpdatedEventPublisherInterface')
+    private readonly itemQuantityUpdatedPublisher: ItemQuantityUpdatedEventPublisherInterface
   ) {}
 
   service(
@@ -61,30 +64,47 @@ export class UpdateItemQuantityService
 
         return from(
           this.itemsDatasource.dataSource.transaction(async (manager) => {
-            return await firstValueFrom(
+            const updateResult = await firstValueFrom(
               this.itemsDatasource.updateQuantityById(
                 updatedDomainItem.id,
                 Quantity.of(updatedDomainItem.quantity),
                 manager
               )
             );
+
+            return updateResult;
           })
         ).pipe(
           switchMap((updateResult) => {
-            this.logger.log(
-              `Successfully updated item quantity with ID: ${itemId}`
-            );
-            return of(
-              new UpdateItemQuantityOutputBuilder(
-                updatedDomainItem.id,
-                updateResult.quantity,
-                updateResult.updatedAt
-              ).build()
-            );
+            return this.publishEvent(updatedDomainItem, updateResult);
           })
         );
       })
     );
+  }
+
+  private publishEvent(
+    updatedItem: Item,
+    updateResult: { quantity: number; updatedAt: Date }
+  ): Observable<UpdateItemQuantityOutputDto> {
+    return this.itemQuantityUpdatedPublisher
+      .publishItemQuantityUpdatedEvent({
+        id: updatedItem.id,
+        quantity: updateResult.quantity,
+        updatedAt: updateResult.updatedAt,
+      })
+      .pipe(
+        map(() => {
+          this.logger.log(
+            `Item quantity updated & event published! ID: ${updatedItem.id}`
+          );
+          return new UpdateItemQuantityOutputBuilder(
+            updatedItem.id,
+            updateResult.quantity,
+            updateResult.updatedAt
+          ).build();
+        })
+      );
   }
 
   private throwIfItemNotFound = (): ItemNotFoundOperator => (source$) =>
