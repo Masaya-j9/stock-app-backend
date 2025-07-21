@@ -21,7 +21,7 @@ export class ItemCreatedEventSubscriber {
     // RxJSのObservableを使用して在庫更新を実行
     await firstValueFrom(
       this.stocksDatasource
-        .updateStockQuantityByItemId(
+        .createStockQuantityByItemId(
           event.id,
           event.quantity,
           event.description

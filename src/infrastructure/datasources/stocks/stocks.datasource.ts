@@ -76,7 +76,7 @@ export class StocksDatasource {
    * @param transactionalEntityManager - トランザクション用のEntityManager
    * @returns Observable<Stocks>
    */
-  updateStockQuantityByItemId(
+  createStockQuantityByItemId(
     itemId: number,
     quantity: number,
     description?: string,
