@@ -161,4 +161,30 @@ export class StocksDatasource {
         .execute()
     ).pipe(map(() => undefined));
   }
+
+  /**
+   * 物品IDをを指定して在庫情報を論理削除
+   * @param itemId - 対象の物品ID
+   * @returns Observable<void>
+   */
+  deletedByItemId(itemId: number): Observable<void> {
+    const now = new Date();
+    return from(
+      this.dataSource
+        .getRepository(Stocks)
+        .createQueryBuilder('stocks')
+        .update(Stocks)
+        .set({
+          updatedAt: now,
+          deletedAt: now,
+        })
+        .where('item_id = :itemId AND deleted_at IS NULL', { itemId })
+        .execute()
+    ).pipe(
+      map((result) => {
+        console.log(`[StocksDatasource] Executed query with result:`, result);
+        return undefined;
+      })
+    );
+  }
 }
