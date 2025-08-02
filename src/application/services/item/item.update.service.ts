@@ -350,6 +350,17 @@ export class ItemUpdateService implements ItemUpdateServiceInterface {
             `Item updated & event published! ID: ${updatedItem.id}`
           );
           return this.buildItemUpdateOutput(updatedItem, categories);
+        }),
+        catchError((error) => {
+          this.logger.error(
+            `Failed to publish item updated event: ${error?.message ?? error}`
+          );
+          return throwError(
+            () =>
+              new InternalServerErrorException(
+                '更新処理中にエラーが発生しました'
+              )
+          );
         })
       );
   }
