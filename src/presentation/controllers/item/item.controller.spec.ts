@@ -154,6 +154,12 @@ describe('ItemController', () => {
           },
         },
         {
+          provide: 'ItemDeletedEventPublisherInterface',
+          useValue: {
+            publishItemDeletedEvent: jest.fn(() => of(undefined)),
+          },
+        },
+        {
           provide: Logger,
           useValue: {
             log: jest.fn(),
