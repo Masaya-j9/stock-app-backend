@@ -1,16 +1,18 @@
+import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ItemDeleteService } from './item.delete.service';
 import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
 import { ItemDeleteInputDto } from '../../dto/input/item/item.delete.input.dto';
 import { ItemDeleteOutputDto } from '../../dto/output/item/item.delete.output.dto';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
-import { of } from 'rxjs';
-import { ConflictException, Logger, NotFoundException } from '@nestjs/common';
+import { of, throwError } from 'rxjs';
+import { ItemDeletedEventPublisherInterface } from './events/item.deleted.event.publisher.interface';
 
 describe('ItemDeleteService', () => {
   let itemDeleteService: ItemDeleteService;
   let itemsDatasource: ItemsDatasource;
   let logger: Logger;
+  let itemDeletedPublisher: ItemDeletedEventPublisherInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -31,12 +33,21 @@ describe('ItemDeleteService', () => {
             error: jest.fn(),
           },
         },
+        {
+          provide: 'ItemDeletedEventPublisherInterface',
+          useValue: {
+            publishItemDeletedEvent: jest.fn(() => of(undefined)),
+          },
+        },
       ],
     }).compile();
 
     itemDeleteService = module.get<ItemDeleteService>(ItemDeleteService);
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
     logger = module.get<Logger>(Logger);
+    itemDeletedPublisher = module.get<ItemDeletedEventPublisherInterface>(
+      'ItemDeletedEventPublisherInterface'
+    );
   });
 
   it('should be defined', () => {
@@ -177,6 +188,78 @@ describe('ItemDeleteService', () => {
           done();
         },
         complete: () => {
+          done();
+        },
+      });
+    });
+
+    it('物品削除後にイベントが発行されることを確認', (done) => {
+      const input: ItemDeleteInputDto = { itemId: 1 };
+      const mockItem: Items = {
+        id: 1,
+        name: 'Item Name',
+        quantity: 10,
+        description: 'Description',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+
+      jest.spyOn(itemsDatasource, 'findItemById').mockReturnValue(of(mockItem));
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of([1]));
+      jest.spyOn(itemsDatasource, 'deletedById').mockReturnValue(of(undefined));
+      const publishSpy = jest.spyOn(
+        itemDeletedPublisher,
+        'publishItemDeletedEvent'
+      );
+
+      itemDeleteService.service(input).subscribe({
+        next: () => {
+          expect(publishSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: mockItem.id,
+              name: mockItem.name,
+              quantity: mockItem.quantity,
+              categoryIds: [1],
+            })
+          );
+          done();
+        },
+        error: done,
+      });
+    });
+
+    it('イベント発行に失敗した場合、エラーを返す', (done) => {
+      const input: ItemDeleteInputDto = { itemId: 1 };
+      const mockItem: Items = {
+        id: 1,
+        name: 'Item Name',
+        quantity: 10,
+        description: 'Description',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        deletedAt: null,
+        itemCategories: [],
+      };
+
+      jest.spyOn(itemsDatasource, 'findItemById').mockReturnValue(of(mockItem));
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of([1]));
+      jest.spyOn(itemsDatasource, 'deletedById').mockReturnValue(of(undefined));
+      jest
+        .spyOn(itemDeletedPublisher, 'publishItemDeletedEvent')
+        .mockReturnValue(
+          throwError(() => new Error('Failed to publish event'))
+        );
+
+      itemDeleteService.service(input).subscribe({
+        next: () => done.fail('Expected error but got success'),
+        error: (error) => {
+          expect(error).toBeDefined();
           done();
         },
       });

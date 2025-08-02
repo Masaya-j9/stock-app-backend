@@ -16,9 +16,11 @@ import { RabbitMQModule } from './rabbitmq.module';
 import { RabbitMQItemCreatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.created.event.publisher';
 import { RabbitMQItemUpdatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.updated.event.publisher';
 import { RabbitMQItemQuantityUpdatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.quantity.updated.event.publisher';
+import { RabbitMQItemDeletedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.deleted.event.publisher';
 import { ItemCreatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.created.event.subscriber';
 import { ItemUpdatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.updated.event.subscriber';
 import { ItemQuantityUpdatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.quantity.updated.event.subscriber';
+import { ItemDeletedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.deleted.event.subscriber';
 import { StocksModule } from './stocks.module';
 import { UpdateItemQuantityService } from '../../application/services/item/update.item.quantity.service';
 
@@ -37,6 +39,7 @@ import { UpdateItemQuantityService } from '../../application/services/item/updat
     ItemCreatedEventSubscriber,
     ItemUpdatedEventSubscriber,
     ItemQuantityUpdatedEventSubscriber,
+    ItemDeletedEventSubscriber,
     {
       provide: 'ItemCreatedEventPublisherInterface',
       useClass: RabbitMQItemCreatedEventPublisher,
@@ -48,6 +51,10 @@ import { UpdateItemQuantityService } from '../../application/services/item/updat
     {
       provide: 'ItemQuantityUpdatedEventPublisherInterface',
       useClass: RabbitMQItemQuantityUpdatedEventPublisher,
+    },
+    {
+      provide: 'ItemDeletedEventPublisherInterface',
+      useClass: RabbitMQItemDeletedEventPublisher,
     },
     {
       provide: 'ItemListServiceInterface',
