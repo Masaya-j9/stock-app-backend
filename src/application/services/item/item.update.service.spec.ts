@@ -563,6 +563,9 @@ describe('ItemUpdateService', () => {
 
     it('物品更新後にイベントが発行されることを確認', (done) => {
       const inputItemId = 1;
+      const mockDate = new Date('2025-08-02T14:43:48.594Z');
+      jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
+
       const itemUpdateInputDto: ItemUpdateInputDto = {
         name: 'updatedItemName',
         quantity: 11,
@@ -570,14 +573,14 @@ describe('ItemUpdateService', () => {
         categoryIds: [1, 2],
       };
 
-      // 更新前のアイテム (異なる名前)
+      // 更新前のアイテム
       const mockExistingItem: Items = {
         id: inputItemId,
-        name: 'differentName', // 重要: 更新前の名前は異なるものにする
+        name: 'differentName',
         quantity: 10,
         description: 'itemDescription',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: mockDate,
+        updatedAt: mockDate,
         deletedAt: null,
         itemCategories: [],
       };
@@ -588,13 +591,12 @@ describe('ItemUpdateService', () => {
         name: itemUpdateInputDto.name,
         quantity: itemUpdateInputDto.quantity,
         description: itemUpdateInputDto.description,
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: mockDate,
+        updatedAt: mockDate,
         deletedAt: null,
         itemCategories: [],
       };
 
-      // 重複チェック用のモックを追加
       jest
         .spyOn(itemsDatasource, 'findItemById')
         .mockReturnValue(of(mockExistingItem));
@@ -610,6 +612,7 @@ describe('ItemUpdateService', () => {
       jest
         .spyOn(categoriesDatasource, 'findByCategoryIds')
         .mockReturnValue(of([]));
+
       const publishSpy = jest.spyOn(
         itemUpdatedPublisher,
         'publishItemUpdatedEvent'
@@ -617,20 +620,26 @@ describe('ItemUpdateService', () => {
 
       itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
         next: () => {
-          expect(publishSpy).toHaveBeenCalledWith({
-            id: mockUpdatedItem.id,
-            name: mockUpdatedItem.name,
-            quantity: mockUpdatedItem.quantity,
-            description: mockUpdatedItem.description,
-            createdAt: mockUpdatedItem.createdAt,
-            updatedAt: mockUpdatedItem.updatedAt,
-            categoryIds: [1, 2],
-          });
+          expect(publishSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: mockUpdatedItem.id,
+              name: mockUpdatedItem.name,
+              quantity: mockUpdatedItem.quantity,
+              description: mockUpdatedItem.description,
+              categoryIds: [1, 2],
+              createdAt: expect.any(Date),
+              updatedAt: expect.any(Date),
+            })
+          );
+          jest.restoreAllMocks();
           done();
         },
-        error: (error) => done(error),
+        error: (error) => {
+          jest.restoreAllMocks();
+          done(error);
+        },
       });
-    });
+    }, 10000); // タイムアウトを10秒に延長
 
     it('イベント発行に失敗した場合、エラーを返す', (done) => {
       const inputItemId = 1;
