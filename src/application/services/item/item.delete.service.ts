@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -24,12 +25,17 @@ import {
   ItemNotFoundOperator,
   CategoryIdsNotFoundOperator,
 } from '../../../common/types/rxjs-operator.types';
+import { ItemDeletedEventPublisherInterface } from './events/item.deleted.event.publisher.interface';
 
 @Injectable()
 export class ItemDeleteService implements ItemDeleteServiceInterface {
   private readonly logger = new Logger(ItemDeleteService.name);
 
-  constructor(public readonly itemsDatasource: ItemsDatasource) {}
+  constructor(
+    public readonly itemsDatasource: ItemsDatasource,
+    @Inject('ItemDeletedEventPublisherInterface')
+    private readonly itemDeletedPublisher: ItemDeletedEventPublisherInterface
+  ) {}
 
   service(input: ItemDeleteInputDto): Observable<ItemDeleteOutputDto> {
     const { itemId } = input;
@@ -49,28 +55,42 @@ export class ItemDeleteService implements ItemDeleteServiceInterface {
           categoryIds
         );
 
-        domainItem.deletedAt
-          ? (() => {
-              throw new ConflictException(
-                `Item with ID ${itemId} is already deleted`
-              );
-            })()
-          : null;
+        if (domainItem.deletedAt) {
+          throw new ConflictException(
+            `Item with ID ${itemId} is already deleted`
+          );
+        }
 
         const deletedItem = domainItem.delete();
         return this.itemsDatasource.deletedById(itemId).pipe(
-          map(() => {
-            this.logger.log(`Deleted item with ID: ${itemId}`);
-            const builder = new ItemDeleteOutputBuilder(
-              deletedItem.id,
-              deletedItem.name,
-              deletedItem.quantity,
-              deletedItem.description,
-              deletedItem.updatedAt,
-              deletedItem.deletedAt
-            );
-            return builder.build();
-          })
+          switchMap(() =>
+            this.itemDeletedPublisher
+              .publishItemDeletedEvent({
+                id: deletedItem.id,
+                name: deletedItem.name,
+                quantity: deletedItem.quantity,
+                description: deletedItem.description,
+                createdAt: deletedItem.createdAt,
+                updatedAt: deletedItem.updatedAt,
+                deletedAt: deletedItem.deletedAt,
+                categoryIds: categoryIds,
+              })
+              .pipe(
+                map(() => {
+                  this.logger.log(
+                    `Deleted item with ID: ${itemId} and published event`
+                  );
+                  return new ItemDeleteOutputBuilder(
+                    deletedItem.id,
+                    deletedItem.name,
+                    deletedItem.quantity,
+                    deletedItem.description,
+                    deletedItem.updatedAt,
+                    deletedItem.deletedAt
+                  ).build();
+                })
+              )
+          )
         );
       })
     );
