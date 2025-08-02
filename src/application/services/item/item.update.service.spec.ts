@@ -564,7 +564,8 @@ describe('ItemUpdateService', () => {
     it('物品更新後にイベントが発行されることを確認', (done) => {
       const inputItemId = 1;
       const mockDate = new Date('2025-08-02T14:43:48.594Z');
-      jest.spyOn(global, 'Date').mockImplementation(() => mockDate);
+      const originalDate = global.Date;
+      global.Date = jest.fn(() => mockDate) as any;
 
       const itemUpdateInputDto: ItemUpdateInputDto = {
         name: 'updatedItemName',
@@ -620,72 +621,86 @@ describe('ItemUpdateService', () => {
 
       itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
         next: () => {
-          expect(publishSpy).toHaveBeenCalledWith(
-            expect.objectContaining({
-              id: mockUpdatedItem.id,
-              name: mockUpdatedItem.name,
-              quantity: mockUpdatedItem.quantity,
-              description: mockUpdatedItem.description,
-              categoryIds: [1, 2],
-              createdAt: expect.any(Date),
-              updatedAt: expect.any(Date),
-            })
-          );
+          expect(publishSpy).toHaveBeenCalledWith({
+            id: mockUpdatedItem.id,
+            name: mockUpdatedItem.name,
+            quantity: mockUpdatedItem.quantity,
+            description: mockUpdatedItem.description,
+            categoryIds: [1, 2],
+            createdAt: mockDate,
+            updatedAt: mockDate,
+          });
+          global.Date = originalDate;
           jest.restoreAllMocks();
           done();
         },
         error: (error) => {
+          global.Date = originalDate;
           jest.restoreAllMocks();
           done(error);
         },
       });
-    }, 10000); // タイムアウトを10秒に延長
+    });
 
     it('イベント発行に失敗した場合、エラーを返す', (done) => {
       const inputItemId = 1;
+      const mockDate = new Date('2025-08-02T14:43:48.594Z');
+
+      // --- global.Date の丸ごと上書きをやめて、Date.nowだけモックする ---
+      const originalDateNow = Date.now;
+      Date.now = jest.fn(() => mockDate.getTime());
+
       const itemUpdateInputDto: ItemUpdateInputDto = {
         name: 'updatedItemName',
         quantity: 11,
         description: 'updatedItemDescription',
         categoryIds: [1, 2],
       };
-      const mockItems: Items = {
-        id: 1,
-        name: 'currentItemName',
+
+      const mockExistingItem: Items = {
+        id: inputItemId,
+        name: 'differentName',
         quantity: 10,
         description: 'itemDescription',
-        createdAt: new Date(),
-        updatedAt: new Date(),
+        createdAt: mockDate,
+        updatedAt: mockDate,
         deletedAt: null,
         itemCategories: [],
       };
 
       jest
         .spyOn(itemsDatasource, 'findItemById')
-        .mockReturnValue(of(mockItems));
+        .mockReturnValue(of(mockExistingItem));
       jest
         .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
         .mockReturnValue(of([1, 2]));
       jest
         .spyOn(itemsDatasource, 'updateItemWithinTransactionQuery')
-        .mockReturnValue(of(mockItems));
+        .mockReturnValue(of(mockExistingItem));
       jest
         .spyOn(itemsDatasource, 'updateItemCategoriesWithinTransactionQuery')
         .mockReturnValue(of({ categoryIds: [1, 2] }));
       jest
         .spyOn(categoriesDatasource, 'findByCategoryIds')
         .mockReturnValue(of([]));
+
+      // イベント発行が失敗するObservableを返す
       jest
         .spyOn(itemUpdatedPublisher, 'publishItemUpdatedEvent')
-        .mockReturnValue(
-          throwError(() => new Error('Failed to publish event'))
-        );
+        .mockReturnValue(throwError(() => new Error('publish failed')));
 
       itemUpdateService.service(itemUpdateInputDto, inputItemId).subscribe({
-        next: () => done.fail('Expected error but got success'),
+        next: () => {
+          // success時はfailにする
+          Date.now = originalDateNow;
+          jest.restoreAllMocks();
+          done.fail('Expected error but got success');
+        },
         error: (error) => {
           expect(error).toBeInstanceOf(InternalServerErrorException);
           expect(error.message).toBe('更新処理中にエラーが発生しました');
+          Date.now = originalDateNow;
+          jest.restoreAllMocks();
           done();
         },
       });
