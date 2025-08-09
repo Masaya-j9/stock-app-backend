@@ -187,4 +187,31 @@ export class StocksDatasource {
       })
     );
   }
+
+  /**
+   * 物品IDと在庫を指定して、論理削除されている在庫を復元
+   */
+  restoreStockByItemId(
+    itemId: number,
+    quantity: number,
+    transactionalEntityManager?: EntityManager
+  ): Observable<void> {
+    const queryRunner = transactionalEntityManager || this.dataSource.manager;
+    return from(
+      queryRunner
+        .createQueryBuilder()
+        .update(Stocks)
+        .set({
+          quantity: quantity,
+          updatedAt: new Date(),
+          deletedAt: null,
+        })
+        .where('item_id = :itemId AND deleted_at IS NOT NULL', { itemId })
+        .execute()
+    ).pipe(
+      map(() => {
+        console.log(`[StocksDatasource] Stock restored for item ID: ${itemId}`);
+      })
+    );
+  }
 }
