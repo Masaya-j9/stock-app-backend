@@ -22,6 +22,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             name: 'item.quantity.updated',
             type: 'topic',
           },
+          {
+            name: 'item.deleted',
+            type: 'topic',
+          },
+          {
+            name: 'item.restored',
+            type: 'topic',
+          },
         ],
         connectionInitOptions: {
           wait: true,
