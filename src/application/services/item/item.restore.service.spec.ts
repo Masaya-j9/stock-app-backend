@@ -4,12 +4,18 @@ import { ItemsDatasource } from '../../../infrastructure/datasources/items/items
 import { ItemRestoreInputDto } from '../../dto/input/item/item.restore.input.dto';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
 import { of, throwError } from 'rxjs';
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
+import { ItemRestoreEventPublisherInterface } from './events/item.restore.event.publisher.interface';
 
 describe('ItemRestoreService', () => {
   let itemRestoreService: ItemRestoreService;
   let itemsDatasource: ItemsDatasource;
   let logSpy: jest.SpyInstance;
+  let itemRestorePublisher: ItemRestoreEventPublisherInterface;
 
   beforeEach(async () => {
     const mockQueryRunner = {
@@ -35,11 +41,20 @@ describe('ItemRestoreService', () => {
             restoreDeletedItemById: jest.fn(),
           },
         },
+        {
+          provide: 'ItemRestoreEventPublisherInterface',
+          useValue: {
+            publishItemRestoreEvent: jest.fn(() => of(void 0)),
+          },
+        },
       ],
     }).compile();
 
     itemRestoreService = module.get<ItemRestoreService>(ItemRestoreService);
     itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
+    itemRestorePublisher = module.get<ItemRestoreEventPublisherInterface>(
+      'ItemRestoreEventPublisherInterface'
+    );
 
     logSpy = jest
       .spyOn(itemRestoreService['logger'], 'log')
@@ -260,6 +275,98 @@ describe('ItemRestoreService', () => {
           done.fail(
             'Expected an error to be thrown, but completed successfully'
           );
+        },
+      });
+    });
+
+    it('復元後にイベントがpublishされる', (done) => {
+      const input: ItemRestoreInputDto = { id: 1 };
+      const now = new Date();
+      const mockItem: Items = {
+        id: input.id,
+        name: 'Restored Item',
+        quantity: 5,
+        description: 'Restored Description',
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: new Date(),
+        itemCategories: [],
+      };
+
+      const mockCategoryIds = [1, 2];
+
+      jest
+        .spyOn(itemsDatasource, 'findDeletedItemById')
+        .mockReturnValue(of(mockItem));
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of(mockCategoryIds));
+      jest
+        .spyOn(itemsDatasource, 'restoreDeletedItemById')
+        .mockReturnValue(of(mockItem));
+
+      const publishSpy = jest
+        .spyOn(itemRestorePublisher, 'publishItemRestoreEvent')
+        .mockReturnValue(of(void 0));
+
+      itemRestoreService.service(input).subscribe({
+        next: (output) => {
+          expect(output.id).toEqual(mockItem.id);
+          expect(publishSpy).toHaveBeenCalledTimes(1);
+          expect(publishSpy).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: mockItem.id,
+              name: mockItem.name,
+              quantity: mockItem.quantity,
+              description: mockItem.description,
+              categoryIds: mockCategoryIds,
+              createdAt: expect.any(Date),
+              updatedAt: expect.any(Date),
+              deletedAt: null,
+            })
+          );
+          done();
+        },
+        error: (err) => done(err),
+      });
+    });
+
+    it('復元イベントのpublishが失敗した場合、500エラーを返す', (done) => {
+      const input: ItemRestoreInputDto = { id: 1 };
+      const now = new Date();
+      const mockItem: Items = {
+        id: input.id,
+        name: 'Restored Item',
+        quantity: 5,
+        description: 'Restored Description',
+        createdAt: now,
+        updatedAt: now,
+        deletedAt: new Date(),
+        itemCategories: [],
+      };
+
+      const mockCategoryIds = [1, 2];
+
+      jest
+        .spyOn(itemsDatasource, 'findDeletedItemById')
+        .mockReturnValue(of(mockItem));
+      jest
+        .spyOn(itemsDatasource, 'findCategoryIdsByItemId')
+        .mockReturnValue(of(mockCategoryIds));
+      jest
+        .spyOn(itemsDatasource, 'restoreDeletedItemById')
+        .mockReturnValue(of(mockItem));
+
+      jest
+        .spyOn(itemRestorePublisher, 'publishItemRestoreEvent')
+        .mockReturnValue(throwError(() => new Error('publish failed')));
+
+      itemRestoreService.service(input).subscribe({
+        next: () => done.fail('Expected error but got success'),
+        error: (err) => {
+          expect(err).toBeInstanceOf(InternalServerErrorException);
+          expect(err.message).toBe('復元処理中にエラーが発生しました');
+          done();
         },
       });
     });
