@@ -17,10 +17,12 @@ import { RabbitMQItemCreatedEventPublisher } from '../../infrastructure/messagin
 import { RabbitMQItemUpdatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.updated.event.publisher';
 import { RabbitMQItemQuantityUpdatedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.quantity.updated.event.publisher';
 import { RabbitMQItemDeletedEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.deleted.event.publisher';
+import { RabbitMQItemRestoreEventPublisher } from '../../infrastructure/messaging/rabbitmq/publisher/item.restore.event.publisher';
 import { ItemCreatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.created.event.subscriber';
 import { ItemUpdatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.updated.event.subscriber';
 import { ItemQuantityUpdatedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.quantity.updated.event.subscriber';
 import { ItemDeletedEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.deleted.event.subscriber';
+import { ItemRestoreEventSubscriber } from '../../infrastructure/messaging/rabbitmq/subscriber/item.restore.event.suscriber';
 import { StocksModule } from './stocks.module';
 import { UpdateItemQuantityService } from '../../application/services/item/update.item.quantity.service';
 
@@ -40,6 +42,7 @@ import { UpdateItemQuantityService } from '../../application/services/item/updat
     ItemUpdatedEventSubscriber,
     ItemQuantityUpdatedEventSubscriber,
     ItemDeletedEventSubscriber,
+    ItemRestoreEventSubscriber,
     {
       provide: 'ItemCreatedEventPublisherInterface',
       useClass: RabbitMQItemCreatedEventPublisher,
@@ -55,6 +58,10 @@ import { UpdateItemQuantityService } from '../../application/services/item/updat
     {
       provide: 'ItemDeletedEventPublisherInterface',
       useClass: RabbitMQItemDeletedEventPublisher,
+    },
+    {
+      provide: 'ItemRestoreEventPublisherInterface',
+      useClass: RabbitMQItemRestoreEventPublisher,
     },
     {
       provide: 'ItemListServiceInterface',
