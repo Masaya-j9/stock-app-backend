@@ -160,6 +160,12 @@ describe('ItemController', () => {
           },
         },
         {
+          provide: 'ItemRestoreEventPublisherInterface',
+          useValue: {
+            publishItemRestoreEvent: jest.fn(() => of(undefined)),
+          },
+        },
+        {
           provide: Logger,
           useValue: {
             log: jest.fn(),

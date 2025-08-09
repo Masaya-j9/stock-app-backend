@@ -9,6 +9,7 @@ import {
   filter,
   defaultIfEmpty,
   mergeMap,
+  finalize,
 } from 'rxjs';
 import {
   Injectable,
@@ -16,6 +17,7 @@ import {
   ConflictException,
   Logger,
   InternalServerErrorException,
+  Inject,
 } from '@nestjs/common';
 import { ItemRestoreServiceInterface } from './item.restore.interface';
 import { ItemRestoreInputDto } from '../../dto/input/item/item.restore.input.dto';
@@ -28,12 +30,17 @@ import {
   ItemNotFoundOperator,
   CategoryIdsNotFoundOperator,
 } from '../../../common/types/rxjs-operator.types';
+import { ItemRestoreEventPublisherInterface } from './events/item.restore.event.publisher.interface';
 
 @Injectable()
 export class ItemRestoreService implements ItemRestoreServiceInterface {
   private readonly logger = new Logger(ItemRestoreService.name);
 
-  constructor(public readonly itemsDatasource: ItemsDatasource) {}
+  constructor(
+    public readonly itemsDatasource: ItemsDatasource,
+    @Inject('ItemRestoreEventPublisherInterface')
+    private readonly itemRestorePublisher: ItemRestoreEventPublisherInterface
+  ) {}
 
   /**
    * 削除された物品を復元する
@@ -71,11 +78,24 @@ export class ItemRestoreService implements ItemRestoreServiceInterface {
           }),
           switchMap((restoredItem) =>
             from(queryRunner.commitTransaction()).pipe(
-              map(() => {
+              switchMap(() =>
+                this.publishItemRestoredEvent(restoredItem).pipe(
+                  map(() => restoredItem),
+                  catchError(() =>
+                    throwError(
+                      () =>
+                        new InternalServerErrorException(
+                          '復元処理中にエラーが発生しました'
+                        )
+                    )
+                  )
+                )
+              ),
+              map((item) => {
                 this.logger.log(
-                  `Successfully restored item with ID: ${restoredItem.id}`
+                  `Successfully restored item with ID: ${item.id}`
                 );
-                return new ItemRestoreOutputBuilder(restoredItem).build();
+                return new ItemRestoreOutputBuilder(item).build();
               })
             )
           )
@@ -98,7 +118,9 @@ export class ItemRestoreService implements ItemRestoreServiceInterface {
           })
         )
       ),
-      switchMap((result) => from(queryRunner.release()).pipe(map(() => result)))
+      finalize(() => {
+        queryRunner.release();
+      })
     );
   }
 
@@ -152,5 +174,20 @@ export class ItemRestoreService implements ItemRestoreServiceInterface {
       throw new ConflictException(`Item with ID ${item.id} is not deleted`);
     }
     return domainItem;
+  }
+
+  private publishItemRestoredEvent(
+    restoredItem: ReturnType<typeof ItemDomainFactory.fromInfrastructureSingle>
+  ): Observable<void> {
+    return this.itemRestorePublisher.publishItemRestoreEvent({
+      id: restoredItem.id,
+      name: restoredItem.name,
+      quantity: restoredItem.quantity,
+      description: restoredItem.description,
+      createdAt: restoredItem.createdAt,
+      updatedAt: restoredItem.updatedAt,
+      deletedAt: restoredItem.deletedAt,
+      categoryIds: restoredItem.categoryIds,
+    });
   }
 }
