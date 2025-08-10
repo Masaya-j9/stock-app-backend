@@ -1,4 +1,9 @@
 import { Module } from '@nestjs/common';
+import { StockUpdatedEventSubscriberService } from '../../application/services/stock/events/stock.updated.event.subscriber.service';
+import { StockDeletedEventSubscriberService } from '../../application/services/stock/events/stock.deleted.event.subscriber.service';
+import { StockRestoredEventSubscriberService } from '../../application/services/stock/events/stock.restored.event.subscriber.service';
+import { StockQuantityUpdatedEventSubscriberService } from '../../application/services/stock/events/stock.quantity.updated.event.subscriber.service';
+import { StockCreatedEventSubscriberService } from '../../application/services/stock/events/stock.created.event.subscriber.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Stocks } from '../../infrastructure/orm/entities/stocks.entity';
 import { Items } from '../../infrastructure/orm/entities/items.entity';
@@ -18,7 +23,35 @@ import { DatabaseModule } from './database.module';
       provide: 'StockListServiceInterface',
       useClass: StockListService,
     },
+    {
+      provide: 'StockQuantityUpdatedEventSubscriberInterface',
+      useClass: StockQuantityUpdatedEventSubscriberService,
+    },
+    {
+      provide: 'StockCreatedEventSubscriberInterface',
+      useClass: StockCreatedEventSubscriberService,
+    },
+    {
+      provide: 'StockUpdatedEventSubscriberInterface',
+      useClass: StockUpdatedEventSubscriberService,
+    },
+    {
+      provide: 'StockDeletedEventSubscriberInterface',
+      useClass: StockDeletedEventSubscriberService,
+    },
+    {
+      provide: 'StockRestoredEventSubscriberInterface',
+      useClass: StockRestoredEventSubscriberService,
+    },
   ],
-  exports: [StocksDatasource, ItemsDatasource],
+  exports: [
+    StocksDatasource,
+    ItemsDatasource,
+    'StockCreatedEventSubscriberInterface',
+    'StockUpdatedEventSubscriberInterface',
+    'StockDeletedEventSubscriberInterface',
+    'StockRestoredEventSubscriberInterface',
+    'StockQuantityUpdatedEventSubscriberInterface',
+  ],
 })
 export class StocksModule {}
