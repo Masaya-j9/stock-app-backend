@@ -1,14 +1,18 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { Observable, tap } from 'rxjs';
-import { StocksDatasource } from '../../../datasources/stocks/stocks.datasource';
 import { ItemDeletedEvent } from '../../../../application/services/item/events/item.deleted.event.publisher.interface';
+import { Inject } from '@nestjs/common';
+import { StockDeletedEventSubscriberInterface } from '../../../../application/services/stock/events/stock.deleted.event.subscriber.interface';
 
 @Injectable()
 export class ItemDeletedEventSubscriber {
   private readonly logger = new Logger(ItemDeletedEventSubscriber.name);
 
-  constructor(private readonly stocksDatasource: StocksDatasource) {}
+  constructor(
+    @Inject('StockDeletedEventSubscriberInterface')
+    private readonly stockDeletedHandler: StockDeletedEventSubscriberInterface
+  ) {}
 
   @RabbitSubscribe({
     exchange: 'stock.exchange',
@@ -18,7 +22,7 @@ export class ItemDeletedEventSubscriber {
   handleItemDeleted(event: ItemDeletedEvent): Observable<void> {
     this.logger.log(`Received item deleted event for item ID: ${event.id}`);
 
-    return this.stocksDatasource.deletedByItemId(event.id).pipe(
+    return this.stockDeletedHandler.handle(event).pipe(
       tap({
         next: () =>
           this.logger.log(
