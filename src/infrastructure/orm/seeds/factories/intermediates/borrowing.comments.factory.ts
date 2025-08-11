@@ -3,7 +3,7 @@ import { BorrowingComments } from '../../../entities/intermediates/borrowing.com
 import { Borrowings } from '../../../entities/borrowings.entity';
 import { Comments } from '../../../entities/comments.entity';
 
-const borrowingCommensData = [
+export const borrowingCommensData = [
   { borrowingId: 1, commentId: 1 },
   { borrowingId: 2, commentId: 2 },
   { borrowingId: 3, commentId: 3 },

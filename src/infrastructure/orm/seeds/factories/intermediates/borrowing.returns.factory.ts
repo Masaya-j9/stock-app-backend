@@ -5,7 +5,7 @@ import { Returns } from '../../../entities/returns.entity';
 import { Statuses } from '../../../entities/statuses.entity';
 
 // 前半5件は貸出中、後半5件は返却済み
-const borrowingReturnsData = [
+export const borrowingReturnsData = [
   { borrowingId: 1, returnId: 1, statusId: 2 },
   { borrowingId: 2, returnId: 2, statusId: 2 },
   { borrowingId: 3, returnId: 3, statusId: 2 },

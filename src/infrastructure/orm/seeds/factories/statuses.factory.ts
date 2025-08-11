@@ -1,7 +1,7 @@
 import { setSeederFactory } from 'typeorm-extension';
 import { Statuses } from '../../entities/statuses.entity';
 
-const statusData = [
+export const statusData = [
   { name: 'not_yet', description: 'タスクが未着手の状態' },
   { name: 'in_progress', description: '貸出中の状態' },
   { name: 'in_checking', description: '返却されたかどうか確認中' },

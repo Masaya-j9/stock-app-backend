@@ -3,7 +3,7 @@ import { UserBorrowings } from '../../../entities/intermediates/user.borrowings.
 import { Users } from '../../../entities/users.entity';
 import { Borrowings } from '../../../entities/borrowings.entity';
 
-const userBorrwingsData = [
+export const userBorrowingsData = [
   { userId: 1, borrowingId: 1 },
   { userId: 2, borrowingId: 2 },
   { userId: 3, borrowingId: 3 },
@@ -16,7 +16,7 @@ const userBorrwingsData = [
   { userId: 10, borrowingId: 10 },
 ];
 
-export const UserBorrowingsFactory = userBorrwingsData.map((data) => {
+export const UserBorrowingsFactory = userBorrowingsData.map((data) => {
   setSeederFactory(UserBorrowings, () => {
     const userBorrowings = new UserBorrowings();
     userBorrowings.user = new Users();
