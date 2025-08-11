@@ -80,7 +80,18 @@ entity "StockHistories" as stock_histories {
   *id: integer <<PK>>,
   --
   stock_id: integer <<FK>>,
+  stock_history_status_id: integer <<FK>>,
   quantity: integer,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "StockHistoryStatuses" as stock_history_statuses {
+  *id: integer <<PK>>,
+  --
+  name: string,
+  description: string,
   created_at: datetime,
   updated_at: datetime,
   deleted_at: datetime,

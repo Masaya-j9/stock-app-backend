@@ -24,6 +24,7 @@ items ||--o{ item_categories : many
 stocks o--o items : one
 
 stocks ||-l-o{ stock_histories : has
+stock_history_statuses ||-u-o{ stock_histories : has
 
 ' 中間テーブル
 stocks o-l-o{ borrowing_stocks : many
