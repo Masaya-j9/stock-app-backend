@@ -3,7 +3,7 @@ import { BorrowingStocks } from '../../../entities/intermediates/borrowing.stock
 import { Borrowings } from '../../../entities/borrowings.entity';
 import { Stocks } from '../../../entities/stocks.entity';
 
-const borrowingStocksData = [
+export const borrowingStocksData = [
   { borrowingId: 1, stockId: 1 },
   { borrowingId: 2, stockId: 2 },
   { borrowingId: 3, stockId: 3 },

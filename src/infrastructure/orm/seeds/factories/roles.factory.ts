@@ -2,7 +2,7 @@ import { setSeederFactory } from 'typeorm-extension';
 import { Roles } from '../../entities/roles.entity';
 
 // 新規でロールを追加したい場合、追加する
-const roleData = [
+export const roleData = [
   { name: 'admin', description: '管理者' },
   { name: 'member', description: '一般会員' },
   { name: 'guest', description: 'ゲスト' },

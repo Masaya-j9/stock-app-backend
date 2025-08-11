@@ -1,7 +1,7 @@
 import { setSeederFactory } from 'typeorm-extension';
 import { Returns } from '../../entities/returns.entity';
 
-const returnsData = [
+export const returnsData = [
   { quantity: 1 },
   { quantity: 1 },
   { quantity: 1 },

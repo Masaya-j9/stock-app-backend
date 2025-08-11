@@ -1,7 +1,7 @@
 import { setSeederFactory } from 'typeorm-extension';
 import { Categories } from '../../entities/categories.entity';
 
-const categoryData = [
+export const categoryData = [
   { name: 'ガジェット', description: 'ガジェットに関するカテゴリ' },
   { name: '書籍', description: '書籍に関するカテゴリ' },
   { name: '家具', description: '家具に関するカテゴリ' },

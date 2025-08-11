@@ -3,7 +3,7 @@ import { ReturnStocks } from '../../../entities/intermediates/return.stocks.enti
 import { Returns } from '../../../entities/returns.entity';
 import { Stocks } from '../../../entities/stocks.entity';
 
-const returnStocksData = [
+export const returnStocksData = [
   { returnId: 1, stockId: 1 },
   { returnId: 2, stockId: 2 },
   { returnId: 3, stockId: 3 },

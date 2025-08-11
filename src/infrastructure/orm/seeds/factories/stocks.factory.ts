@@ -3,7 +3,7 @@ import { Stocks } from '../../entities/stocks.entity';
 import { Items } from '../../entities/items.entity';
 import { faker } from '@faker-js/faker';
 
-const stockData = [
+export const stockData = [
   { quantity: 5, item_id: 1 },
   { quantity: 5, item_id: 2 },
   { quantity: 5, item_id: 3 },

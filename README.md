@@ -134,8 +134,42 @@ npm run typeorm:migration:run
 ```
 
 ## Seedデータの作成
-```
+
+### 共通部分
+1. 各テーブル用のseed.factory.tsを作成する
+
+2. マスタデータがある場合、配列データとして`export const xxxData = [{各プロパティ}]`で作成する。ランダムデータの場合は、fakerを使うようにする
+
+3. `src/infrastructure/orm/seeds/seed.data.config.ts`にある`SEED_DATA_PATTERNS`に`xxxData`を追加する
+
+4. `src/infrastructure/orm/seeds/main.seeder.ts`にfactoryの呼び出しを追加する(このとき、データの挿入の順番を考えること！)
+
+### 初回の場合
+5. コマンドを実施
+```shell
 npm run typeorm:seed:run
+```
+
+### テーブルごとにマスターデータを追加する方法
+5. 挿入するテーブルを選んでコマンドを実施する
+```shell
+npm run typeorm:seed:specific -- ${factory名}
+```
+※コマンド操作に失敗すると、実行できるfactory名が出力されるので名前があっているかどうか確認すること！
+```ts
+[Nest] 32014  - 2025/08/12 1:32:17     LOG [SeedSpecific] 利用可能なファクトリー:
+  - borrowings
+  - categories
+  - comments
+  - items
+  - profiles
+  - returns
+  - roles
+  - statuses
+  - stock.histories
+  - stock.history.statuses
+  - stocks
+  - users
 ```
 
 ## Description
@@ -173,17 +207,3 @@ $ npm run test:e2e
 # test coverage
 $ npm run test:cov
 ```
-
-## Support
-
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
-
-## Stay in touch
-
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).

@@ -3,7 +3,7 @@ import { Profiles } from '../../entities/profiles.entity';
 import { Users } from '../../entities/users.entity';
 import { faker } from '@faker-js/faker';
 
-const profileData = [
+export const profileData = [
   { userId: 1 },
   { userId: 2 },
   { userId: 3 },
