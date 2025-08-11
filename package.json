@@ -28,6 +28,7 @@
         "typeorm:entity:create": "typeorm-ts-node-commonjs entity:create -n",
         "typeorm:subscriber:create": "typeorm-ts-node-commonjs subscriber:create -n",
         "typeorm:seed:run": "ts-node src/infrastructure/orm/seeds/seed.ts",
+        "typeorm:seed:specific": "ts-node src/infrastructure/orm/seeds/seed.specific.ts",
         "typeorm:seed:create": "typeorm-ts-node-commonjs seed:create -n"
     },
     "dependencies": {
