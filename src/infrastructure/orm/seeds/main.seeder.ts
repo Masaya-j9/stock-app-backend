@@ -8,6 +8,7 @@ import { Profiles } from '../entities/profiles.entity';
 import { Returns } from '../entities/returns.entity';
 import { Roles } from '../entities/roles.entity';
 import { Statuses } from '../entities/statuses.entity';
+import { StockHistoryStatuses } from '../entities/stock.history.statuses.entity';
 import { StockHistories } from '../entities/stock.histories.entity';
 import { Stocks } from '../entities/stocks.entity';
 import { Users } from '../entities/users.entity';
@@ -53,6 +54,11 @@ export class MainSeeder implements Seeder {
     //statusesデータを作成
     const statusFactory = await factoryManager.get(Statuses);
     await statusFactory.saveMany(4);
+
+    //stockHistoryStatusesデータを追加
+    const stockHistoryStatusFactory =
+      await factoryManager.get(StockHistoryStatuses);
+    await stockHistoryStatusFactory.saveMany(8);
 
     //stockHistoriesデータを作成
     const stockHistoryFactory = await factoryManager.get(StockHistories);
