@@ -34,7 +34,7 @@ http://localhost:15672/
 ### ドメインモデルについて
 ![ドメインモデル図について](assets/domain-models/20250608211700-domain-model.png)
 ### データベース設計について
-![ER図について](assets/relations/20250811214030-relations.png)
+![ER図について](assets/relations/20250812142034-relations.png)
 
 
 ## READMEの更新

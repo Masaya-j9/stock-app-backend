@@ -22,6 +22,7 @@ categories ||-u-o{ item_categories : many
 items ||--o{ item_categories : many
 
 stocks o--o items : one
+stock_statuses ||-l-o{ stocks : has
 
 stocks ||-l-o{ stock_histories : has
 stock_history_statuses ||-u-o{ stock_histories : has

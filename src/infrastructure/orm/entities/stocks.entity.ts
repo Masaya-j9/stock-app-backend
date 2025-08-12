@@ -6,11 +6,13 @@ import {
   JoinColumn,
   OneToMany,
   DeleteDateColumn,
+  ManyToOne,
 } from 'typeorm';
 import { Items } from './items.entity';
 import { BorrowingStocks } from './intermediates/borrowing.stocks.entity';
 import { ReturnStocks } from './intermediates/return.stocks.entity';
 import { StockHistories } from './stock.histories.entity';
+import { StockStatuses } from './stock.statuses.entity';
 
 /**
  * 在庫を管理するStocksテーブルのエンティティ
@@ -49,4 +51,8 @@ export class Stocks {
   @OneToMany(() => ReturnStocks, (returnStocks) => returnStocks.stock)
   returnStocks: ReturnStocks;
   borrowingComments: any;
+
+  @ManyToOne(() => StockStatuses, (status) => status.stocks)
+  @JoinColumn({ name: 'status_id' })
+  status: StockStatuses;
 }
