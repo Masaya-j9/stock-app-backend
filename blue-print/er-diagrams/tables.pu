@@ -70,7 +70,18 @@ entity "Stocks" as stocks {
   *id: integer <<PK>>,
   --
   item_id: integer <<FK>>,
+  stock_status_id: integer <<FK>>,
   quantity: integer,
+  created_at: datetime,
+  updated_at: datetime,
+  deleted_at: datetime,
+}
+
+entity "StockStatuses" as stock_statuses {
+  *id: integer <<PK>>,
+  --
+  name: string,
+  description: string,
   created_at: datetime,
   updated_at: datetime,
   deleted_at: datetime,
