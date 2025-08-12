@@ -10,6 +10,7 @@ export const SEED_DATA_PATTERNS = [
   'returnsData',
   'profileData',
   'stockData',
+  'stockStatusData', // stock.statuses.factory.ts
 
   // intermediatesディレクトリのマスターデータ変数名
   'borrowingCommensData',
