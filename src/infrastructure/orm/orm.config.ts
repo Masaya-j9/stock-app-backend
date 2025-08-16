@@ -22,10 +22,10 @@ export const ormConfig: DataSourceOptions = {
   username: configService.get<string>('DB_USERNAME'),
   password: configService.get<string>('DB_PASSWORD'),
   database: configService.get<string>('DB_NAME'),
-  entities: ['src/infrastructure/orm/entities/**/*.js'],
+  entities: ['dist/infrastructure/orm/entities/**/*.js'],
   namingStrategy: new SnakeNamingStrategy(),
   synchronize: false, // マイグレーション運用のため false に設定
-  migrations: ['src/infrastructure/migrations/**/*.js'],
+  migrations: ['dist/infrastructure/migrations/**/*.js'],
   extra: {
     // Public Key Retrievalを許可
     connectionLimit: 10,
