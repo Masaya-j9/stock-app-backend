@@ -20,6 +20,30 @@ export class StockItem {
   name: string;
 }
 
+export class StockStatus {
+  @ApiProperty({
+    example: 1,
+    description: '在庫ステータスID',
+    type: Number,
+  })
+  id: number;
+
+  @ApiProperty({
+    example: '利用可能',
+    description: '在庫ステータス名',
+    type: String,
+  })
+  name: string;
+
+  //description
+  @ApiProperty({
+    example: 'この在庫は利用可能です。',
+    description: '在庫ステータスの説明',
+    type: String,
+  })
+  description: string;
+}
+
 export class StockResults {
   @ApiProperty({
     example: 1,
@@ -73,6 +97,19 @@ export class StockResults {
   })
   @Expose({ name: 'item' })
   item: StockItem | null;
+
+  @Type(() => StockStatus)
+  @ApiProperty({
+    example: {
+      id: 1,
+      name: '利用可能',
+      description: 'この在庫は利用可能です。',
+    },
+    description: '関連する在庫ステータス情報',
+    type: StockStatus,
+  })
+  @Expose({ name: 'status' })
+  status: StockStatus;
 }
 
 export class StockListOutputDto implements OutputDto {

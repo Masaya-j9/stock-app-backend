@@ -50,6 +50,13 @@ export class StockListOutputBuilder
                     name: item.name,
                   }
                 : null,
+              status: stock.status
+                ? {
+                    id: stock.status.id,
+                    name: stock.status.name,
+                    description: stock.status.description,
+                  }
+                : null,
             };
           });
           return output;
