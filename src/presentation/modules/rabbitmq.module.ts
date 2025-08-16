@@ -30,6 +30,10 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
             name: 'item.restored',
             type: 'topic',
           },
+          {
+            name: 'stock.exchange',
+            type: 'topic',
+          },
         ],
         connectionInitOptions: {
           wait: true,
