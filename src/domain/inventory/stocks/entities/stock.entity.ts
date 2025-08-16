@@ -1,4 +1,5 @@
 import { Quantity } from '../../items/value-objects/quantity';
+import { StockStatus } from './stock.status.entity';
 
 export class Stock {
   private readonly _id: number;
@@ -8,6 +9,7 @@ export class Stock {
   private readonly _updatedAt: Date;
   private readonly _deletedAt: Date | null;
   private readonly _itemId: number | null;
+  private readonly _status: StockStatus | null;
 
   constructor(
     id: number,
@@ -16,7 +18,8 @@ export class Stock {
     createdAt: Date,
     updatedAt: Date,
     deletedAt: Date | null,
-    itemId: number | null
+    itemId: number | null,
+    status: StockStatus | null
   ) {
     this._id = id;
     this._quantity = quantity;
@@ -25,6 +28,7 @@ export class Stock {
     this._updatedAt = updatedAt;
     this._deletedAt = deletedAt;
     this._itemId = itemId;
+    this._status = status;
   }
 
   // Getters
@@ -54,5 +58,9 @@ export class Stock {
 
   get itemId(): number | null {
     return this._itemId;
+  }
+
+  get status(): StockStatus | null {
+    return this._status;
   }
 }
