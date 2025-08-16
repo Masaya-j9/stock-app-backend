@@ -11,6 +11,7 @@ import { Statuses } from '../entities/statuses.entity';
 import { StockHistoryStatuses } from '../entities/stock.history.statuses.entity';
 import { StockHistories } from '../entities/stock.histories.entity';
 import { Stocks } from '../entities/stocks.entity';
+import { StockStatuses } from '../entities/stock.statuses.entity';
 import { Users } from '../entities/users.entity';
 
 //中間テーブル
@@ -67,6 +68,10 @@ export class MainSeeder implements Seeder {
     //stocksデータを作成
     const stockFactory = await factoryManager.get(Stocks);
     await stockFactory.saveMany(10);
+
+    //StockStatusesデータを作成
+    const StockStatusesFactory = await factoryManager.get(StockStatuses);
+    await StockStatusesFactory.saveMany(6);
 
     //usersデータを作成
     const userFactory = await factoryManager.get(Users);
