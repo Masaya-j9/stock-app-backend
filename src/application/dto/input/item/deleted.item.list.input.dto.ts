@@ -18,6 +18,7 @@ export class DeletedItemListInputDto implements InputDto {
   pages?: number;
 
   @ApiProperty({
+    name: 'sort_order',
     example: 0,
     description: '並べ替え順 0=昇順, 1=降順',
     type: Number,
