@@ -44,6 +44,7 @@ export class StocksDatasource {
           this.dataSource
             .createQueryBuilder('stocks', 'stocks')
             .leftJoinAndSelect('stocks.item', 'item')
+            .leftJoinAndSelect('stocks.status', 'status')
             .where('stocks.id IN (:...ids)', { ids })
             .andWhere('stocks.deleted_at IS NULL')
             .orderBy(`FIELD(stocks.id, ${fieldOrder})`)
