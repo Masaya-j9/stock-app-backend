@@ -4,16 +4,16 @@ import { Items } from '../../entities/items.entity';
 import { faker } from '@faker-js/faker';
 
 export const stockData = [
-  { quantity: 5, item_id: 1 },
-  { quantity: 5, item_id: 2 },
-  { quantity: 5, item_id: 3 },
-  { quantity: 5, item_id: 4 },
-  { quantity: 5, item_id: 5 },
-  { quantity: 5, item_id: 6 },
-  { quantity: 5, item_id: 7 },
-  { quantity: 5, item_id: 8 },
-  { quantity: 5, item_id: 9 },
-  { quantity: 5, item_id: 10 },
+  { quantity: 5, item_id: 1, status_id: 1 },
+  { quantity: 5, item_id: 2, status_id: 1 },
+  { quantity: 5, item_id: 3, status_id: 1 },
+  { quantity: 5, item_id: 4, status_id: 1 },
+  { quantity: 5, item_id: 5, status_id: 1 },
+  { quantity: 5, item_id: 6, status_id: 1 },
+  { quantity: 5, item_id: 7, status_id: 1 },
+  { quantity: 5, item_id: 8, status_id: 1 },
+  { quantity: 5, item_id: 9, status_id: 1 },
+  { quantity: 5, item_id: 10, status_id: 1 },
 ];
 
 //10件の在庫データを生成
