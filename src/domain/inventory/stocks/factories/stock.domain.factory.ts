@@ -1,4 +1,5 @@
 import { Stock } from '../entities/stock.entity';
+import { StockStatus } from '../entities/stock.status.entity';
 import { Stocks } from '../../../../infrastructure/orm/entities/stocks.entity';
 import { Quantity } from '../../items/value-objects/quantity';
 
@@ -11,7 +12,17 @@ export class StockDomainFactory {
       stock.createdAt,
       stock.updatedAt,
       stock.deletedAt,
-      stock.item ? stock.item.id : null
+      stock.item ? stock.item.id : null,
+      stock.status
+        ? new StockStatus(
+            stock.status.id,
+            stock.status.name,
+            stock.status.description,
+            stock.status.createdAt,
+            stock.status.updatedAt,
+            stock.status.deletedAt
+          )
+        : null
     );
   }
 

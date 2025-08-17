@@ -65,6 +65,11 @@ describe('StockListService', () => {
             updatedAt: new Date(),
             deletedAt: null,
           },
+          status: {
+            id: 1,
+            name: 'In Stock',
+            description: 'The item is in stock',
+          },
         },
         {
           id: 2,
@@ -82,6 +87,11 @@ describe('StockListService', () => {
             createdAt: new Date(),
             updatedAt: new Date(),
             deletedAt: null,
+          },
+          status: {
+            id: 2,
+            name: 'Out of Stock',
+            description: 'The item is out of stock',
           },
         },
       ] as Stocks[];
@@ -123,6 +133,11 @@ describe('StockListService', () => {
               id: 1,
               name: 'Item 1',
             },
+            status: {
+              id: 1,
+              name: 'In Stock',
+              description: 'The item is in stock',
+            },
           },
           {
             id: 2,
@@ -133,6 +148,11 @@ describe('StockListService', () => {
             item: {
               id: 2,
               name: 'Item 2',
+            },
+            status: {
+              id: 2,
+              name: 'Out of Stock',
+              description: 'The item is out of stock',
             },
           },
         ],

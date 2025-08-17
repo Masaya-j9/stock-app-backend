@@ -63,6 +63,11 @@ describe('StockController', () => {
             createdAt: new Date(),
             updatedAt: new Date(),
             item: { id: 1, name: 'Item 1' },
+            status: {
+              id: 1,
+              name: 'In Stock',
+              description: 'The item is in stock',
+            },
           },
         ],
       };

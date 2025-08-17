@@ -1,6 +1,7 @@
 import { StockListOutputBuilder } from './stock.list.output.builder';
 import { StockListOutputDto } from './stock.list.output.dto';
 import { Stock } from '../../../../domain/inventory/stocks/entities/stock.entity';
+import { StockStatus } from '../../../../domain/inventory/stocks/entities/stock.status.entity';
 import { Quantity } from '../../../../domain/inventory/items/value-objects/quantity';
 import { Items } from '../../../../infrastructure/orm/entities/items.entity';
 
@@ -13,7 +14,15 @@ describe('StockListOutputBuilder', () => {
       new Date(),
       new Date(),
       null,
-      1
+      1,
+      new StockStatus(
+        1,
+        'In Stock',
+        'The item is in stock',
+        new Date(),
+        new Date(),
+        null
+      )
     ),
     new Stock(
       2,
@@ -22,7 +31,15 @@ describe('StockListOutputBuilder', () => {
       new Date(),
       new Date(),
       null,
-      2
+      2,
+      new StockStatus(
+        2,
+        'Out of Stock',
+        'The item is out of stock',
+        new Date(),
+        new Date(),
+        null
+      )
     ),
   ];
   const items = [
@@ -69,6 +86,9 @@ describe('StockListOutputBuilder', () => {
       expect(output.results[0].updatedAt).toBeInstanceOf(Date);
       expect(output.results[0].item.id).toBe(1);
       expect(output.results[0].item.name).toBe('Item 1');
+      expect(output.results[0].status.id).toBe(1);
+      expect(output.results[0].status.name).toBe('In Stock');
+      expect(output.results[0].status.description).toBe('The item is in stock');
       expect(output.results[1].id).toBe(2);
       expect(output.results[1].quantity).toBe(20);
       expect(output.results[1].description).toBe('テスト在庫2');
@@ -76,6 +96,11 @@ describe('StockListOutputBuilder', () => {
       expect(output.results[1].updatedAt).toBeInstanceOf(Date);
       expect(output.results[1].item.id).toBe(2);
       expect(output.results[1].item.name).toBe('Item 2');
+      expect(output.results[1].status.id).toBe(2);
+      expect(output.results[1].status.name).toBe('Out of Stock');
+      expect(output.results[1].status.description).toBe(
+        'The item is out of stock'
+      );
     });
 
     it('should throw NotFoundException if no stocks found', () => {
