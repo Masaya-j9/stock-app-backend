@@ -6,8 +6,8 @@ import { StockListInputDto } from '../../../application/dto/input/stock/stock.li
 import { StockListOutputDto } from '../../../application/dto/output/stock/stock.list.output.dto';
 import { of, throwError } from 'rxjs';
 import { BadRequestException, NotFoundException } from '@nestjs/common';
-import { StocksDatasource } from '../../../infrastructure/datasources/stocks/stocks.datasource';
-import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
+import { STOCKS_DATASOURCE_TOKEN } from '../../../infrastructure/datasources/stocks/stocks.datasource.interface';
+import { ITEMS_DATASOURCE_TOKEN } from '../../../infrastructure/datasources/items/items.datasource.interface';
 
 describe('StockController', () => {
   let controller: StockController;
@@ -23,14 +23,14 @@ describe('StockController', () => {
           useClass: StockListService,
         },
         {
-          provide: StocksDatasource,
+          provide: STOCKS_DATASOURCE_TOKEN,
           useValue: {
             findStockList: jest.fn(() => of([])),
             countAll: jest.fn(() => of(0)),
           },
         },
         {
-          provide: ItemsDatasource,
+          provide: ITEMS_DATASOURCE_TOKEN,
           useValue: {
             findItemsByIds: jest.fn(() => of([])),
           },

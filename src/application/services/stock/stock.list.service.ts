@@ -9,12 +9,18 @@ import {
   mergeMap,
   throwError,
 } from 'rxjs';
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject } from '@nestjs/common';
 import { StockListServiceInterface } from './stock.list.interface';
 import { StockListInputDto } from '../../dto/input/stock/stock.list.input.dto';
 import { StockListOutputDto } from '../../dto/output/stock/stock.list.output.dto';
-import { StocksDatasource } from '../../../infrastructure/datasources/stocks/stocks.datasource';
-import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
+import {
+  StocksDatasourceInterface,
+  STOCKS_DATASOURCE_TOKEN,
+} from '../../../infrastructure/datasources/stocks/stocks.datasource.interface';
+import {
+  ItemsDatasourceInterface,
+  ITEMS_DATASOURCE_TOKEN,
+} from '../../../infrastructure/datasources/items/items.datasource.interface';
 import { StockListOutputBuilder } from '../../dto/output/stock/stock.list.output.builder';
 import { Stocks } from '../../../infrastructure/orm/entities/stocks.entity';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
@@ -29,8 +35,10 @@ import { StockDomainFactory } from '../../../domain/inventory/stocks/factories/s
 @Injectable()
 export class StockListService implements StockListServiceInterface {
   constructor(
-    public readonly stocksDatasource: StocksDatasource,
-    public readonly itemsDatasource: ItemsDatasource
+    @Inject(STOCKS_DATASOURCE_TOKEN)
+    public readonly stocksDatasource: StocksDatasourceInterface,
+    @Inject(ITEMS_DATASOURCE_TOKEN)
+    public readonly itemsDatasource: ItemsDatasourceInterface
   ) {}
 
   /**

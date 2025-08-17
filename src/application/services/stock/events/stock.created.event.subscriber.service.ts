@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Observable, tap, map } from 'rxjs';
-import { StocksDatasource } from '../../../../infrastructure/datasources/stocks/stocks.datasource';
+import {
+  StocksDatasourceInterface,
+  STOCKS_DATASOURCE_TOKEN,
+} from '../../../../infrastructure/datasources/stocks/stocks.datasource.interface';
 import { ItemCreatedEvent } from '../../item/events/item.created.event.publisher.interface';
 import { StockCreatedEventSubscriberInterface } from './stock.created.event.subscriber.interface';
 
@@ -10,7 +13,10 @@ export class StockCreatedEventSubscriberService
 {
   private readonly logger = new Logger(StockCreatedEventSubscriberService.name);
 
-  constructor(private readonly stocksDatasource: StocksDatasource) {}
+  constructor(
+    @Inject(STOCKS_DATASOURCE_TOKEN)
+    private readonly stocksDatasource: StocksDatasourceInterface
+  ) {}
 
   handle(event: ItemCreatedEvent): Observable<void> {
     this.logger.log(`Handling stock create for item ID: ${event.id}`);

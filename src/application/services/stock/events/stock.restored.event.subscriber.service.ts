@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Observable, tap } from 'rxjs';
-import { StocksDatasource } from '../../../../infrastructure/datasources/stocks/stocks.datasource';
+import {
+  StocksDatasourceInterface,
+  STOCKS_DATASOURCE_TOKEN,
+} from '../../../../infrastructure/datasources/stocks/stocks.datasource.interface';
 import { ItemRestoreEvent } from '../../item/events/item.restore.event.publisher.interface';
 import { StockRestoredEventSubscriberInterface } from './stock.restored.event.subscriber.interface';
 
@@ -12,7 +15,10 @@ export class StockRestoredEventSubscriberService
     StockRestoredEventSubscriberService.name
   );
 
-  constructor(private readonly stocksDatasource: StocksDatasource) {}
+  constructor(
+    @Inject(STOCKS_DATASOURCE_TOKEN)
+    private readonly stocksDatasource: StocksDatasourceInterface
+  ) {}
 
   handle(event: ItemRestoreEvent): Observable<void> {
     this.logger.log(`Handling stock restore for item ID: ${event.id}`);
