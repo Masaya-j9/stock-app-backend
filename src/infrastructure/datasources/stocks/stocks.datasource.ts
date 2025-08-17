@@ -2,12 +2,13 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { Stocks } from '../../orm/entities/stocks.entity';
+import { StocksDatasourceInterface } from './stocks.datasource.interface';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, map, Observable, of, switchMap } from 'rxjs';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
 
 @Injectable()
-export class StocksDatasource {
+export class StocksDatasource implements StocksDatasourceInterface {
   constructor(
     @InjectDataSource()
     public readonly dataSource: DataSource

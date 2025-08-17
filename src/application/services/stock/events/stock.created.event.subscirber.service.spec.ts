@@ -1,19 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
 import { StockCreatedEventSubscriberService } from './stock.created.event.subscriber.service';
-import { StocksDatasource } from '../../../../infrastructure/datasources/stocks/stocks.datasource';
+import {
+  StocksDatasourceInterface,
+  STOCKS_DATASOURCE_TOKEN,
+} from '../../../../infrastructure/datasources/stocks/stocks.datasource.interface';
 import { ItemCreatedEvent } from '../../item/events/item.created.event.publisher.interface';
 
 describe('StockCreatedEventSubscriberService', () => {
   let service: StockCreatedEventSubscriberService;
-  let stocksDatasource: StocksDatasource;
+  let stocksDatasource: StocksDatasourceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StockCreatedEventSubscriberService,
         {
-          provide: StocksDatasource,
+          provide: STOCKS_DATASOURCE_TOKEN,
           useValue: {
             createStockQuantityByItemId: jest.fn(),
           },
@@ -24,7 +27,9 @@ describe('StockCreatedEventSubscriberService', () => {
     service = module.get<StockCreatedEventSubscriberService>(
       StockCreatedEventSubscriberService
     );
-    stocksDatasource = module.get<StocksDatasource>(StocksDatasource);
+    stocksDatasource = module.get<StocksDatasourceInterface>(
+      STOCKS_DATASOURCE_TOKEN
+    );
   });
 
   it('should be defined', () => {

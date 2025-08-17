@@ -9,6 +9,8 @@ import { Stocks } from '../../infrastructure/orm/entities/stocks.entity';
 import { Items } from '../../infrastructure/orm/entities/items.entity';
 import { StocksDatasource } from '../../infrastructure/datasources/stocks/stocks.datasource';
 import { ItemsDatasource } from '../../infrastructure/datasources/items/items.datasource';
+import { STOCKS_DATASOURCE_TOKEN } from '../../infrastructure/datasources/stocks/stocks.datasource.interface';
+import { ITEMS_DATASOURCE_TOKEN } from '../../infrastructure/datasources/items/items.datasource.interface';
 import { StockListService } from '../../application/services/stock/stock.list.service';
 import { StockController } from '../controllers/stock/stock.controller';
 import { DatabaseModule } from './database.module';
@@ -17,8 +19,14 @@ import { DatabaseModule } from './database.module';
   imports: [DatabaseModule, TypeOrmModule.forFeature([Stocks, Items])],
   controllers: [StockController],
   providers: [
-    StocksDatasource,
-    ItemsDatasource,
+    {
+      provide: STOCKS_DATASOURCE_TOKEN,
+      useClass: StocksDatasource,
+    },
+    {
+      provide: ITEMS_DATASOURCE_TOKEN,
+      useClass: ItemsDatasource,
+    },
     {
       provide: 'StockListServiceInterface',
       useClass: StockListService,
@@ -45,8 +53,8 @@ import { DatabaseModule } from './database.module';
     },
   ],
   exports: [
-    StocksDatasource,
-    ItemsDatasource,
+    STOCKS_DATASOURCE_TOKEN,
+    ITEMS_DATASOURCE_TOKEN,
     'StockCreatedEventSubscriberInterface',
     'StockUpdatedEventSubscriberInterface',
     'StockDeletedEventSubscriberInterface',

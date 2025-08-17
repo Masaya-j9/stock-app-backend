@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { Items } from '../../orm/entities/items.entity';
+import { ItemsDatasourceInterface } from './items.datasource.interface';
 import { ItemCategories } from '../../orm/entities/intermediates/item.categories.entity';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, lastValueFrom, map, Observable, of, switchMap } from 'rxjs';
@@ -9,7 +10,7 @@ import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order'
 import { Quantity } from '../../../domain/inventory/items/value-objects/quantity';
 
 @Injectable()
-export class ItemsDatasource {
+export class ItemsDatasource implements ItemsDatasourceInterface {
   constructor(
     @InjectDataSource()
     public readonly dataSource: DataSource

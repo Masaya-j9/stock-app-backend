@@ -1,8 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { of } from 'rxjs';
 import { StockListService } from './stock.list.service';
-import { StocksDatasource } from '../../../infrastructure/datasources/stocks/stocks.datasource';
-import { ItemsDatasource } from '../../../infrastructure/datasources/items/items.datasource';
+import {
+  StocksDatasourceInterface,
+  STOCKS_DATASOURCE_TOKEN,
+} from '../../../infrastructure/datasources/stocks/stocks.datasource.interface';
+import {
+  ItemsDatasourceInterface,
+  ITEMS_DATASOURCE_TOKEN,
+} from '../../../infrastructure/datasources/items/items.datasource.interface';
 import { Stocks } from '../../../infrastructure/orm/entities/stocks.entity';
 import { Items } from '../../../infrastructure/orm/entities/items.entity';
 import { StockListInputDto } from '../../../application/dto/input/stock/stock.list.input.dto';
@@ -11,22 +17,22 @@ import { NotFoundException } from '@nestjs/common';
 
 describe('StockListService', () => {
   let stockListService: StockListService;
-  let stocksDatasource: StocksDatasource;
-  let itemsDatasource: ItemsDatasource;
+  let stocksDatasource: StocksDatasourceInterface;
+  let itemsDatasource: ItemsDatasourceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StockListService,
         {
-          provide: StocksDatasource,
+          provide: STOCKS_DATASOURCE_TOKEN,
           useValue: {
             findStockList: jest.fn(),
             countAll: jest.fn(),
           },
         },
         {
-          provide: ItemsDatasource,
+          provide: ITEMS_DATASOURCE_TOKEN,
           useValue: {
             findItemsByIds: jest.fn(),
           },
@@ -35,8 +41,12 @@ describe('StockListService', () => {
     }).compile();
 
     stockListService = module.get<StockListService>(StockListService);
-    stocksDatasource = module.get<StocksDatasource>(StocksDatasource);
-    itemsDatasource = module.get<ItemsDatasource>(ItemsDatasource);
+    stocksDatasource = module.get<StocksDatasourceInterface>(
+      STOCKS_DATASOURCE_TOKEN
+    );
+    itemsDatasource = module.get<ItemsDatasourceInterface>(
+      ITEMS_DATASOURCE_TOKEN
+    );
   });
 
   it('should be defined', () => {

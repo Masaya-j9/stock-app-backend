@@ -1,6 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Observable, map, tap } from 'rxjs';
-import { StocksDatasource } from '../../../../infrastructure/datasources/stocks/stocks.datasource';
+import {
+  StocksDatasourceInterface,
+  STOCKS_DATASOURCE_TOKEN,
+} from '../../../../infrastructure/datasources/stocks/stocks.datasource.interface';
 import { StockQuantityUpdatedEventSubscriberInterface } from './stock.quantity.updated.event.subscriber.interface';
 import { ItemQuantityUpdatedEvent } from '../../item/events/item.quantity.updated.event.publisher.interface';
 
@@ -12,7 +15,10 @@ export class StockQuantityUpdatedEventSubscriberService
     StockQuantityUpdatedEventSubscriberService.name
   );
 
-  constructor(private readonly stocksDatasource: StocksDatasource) {}
+  constructor(
+    @Inject(STOCKS_DATASOURCE_TOKEN)
+    private readonly stocksDatasource: StocksDatasourceInterface
+  ) {}
 
   handle(event: ItemQuantityUpdatedEvent): Observable<void> {
     this.logger.log(`Handling stock quantity update for item ID: ${event.id}`);
