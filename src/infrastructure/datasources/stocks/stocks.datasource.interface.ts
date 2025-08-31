@@ -1,5 +1,6 @@
 import { Observable } from 'rxjs';
 import { Stocks } from '../../orm/entities/stocks.entity';
+import { StockStatuses } from '../../orm/entities/stock.statuses.entity';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { SortOrder } from '../../../domain/common/value-objects/sort/sort.order';
 import { EntityManager } from 'typeorm';
@@ -38,6 +39,17 @@ export interface StocksDatasourceInterface {
   ): Observable<Stocks>;
 
   /**
+   * 物品IDと数量、ステータスを指定して在庫を更新、または新規作成する
+   */
+  createStockQuantityByItemIdWithStatus(
+    itemId: number,
+    quantity: number,
+    description?: string,
+    status?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<Stocks>;
+
+  /**
    * 物品IDと数量を指定して、既存の在庫情報を更新
    */
   updateStockQuantityByItemId(
@@ -67,4 +79,21 @@ export interface StocksDatasourceInterface {
     quantity: number,
     transactionalEntityManager?: EntityManager
   ): Observable<void>;
+
+  /**
+   * ステータス名と一致するStockStatusesレコードを取得する
+   */
+  getStatusByName(name: string): Observable<StockStatuses | undefined>;
+
+  /**
+   * トランザクション内でステータスIDを指定して在庫を作成・更新する
+   * 永続化されたstockIdのみを返す
+   */
+  createStockWithStatusIdInTransaction(
+    itemId: number,
+    quantity: number,
+    statusId: number,
+    description?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<number>;
 }

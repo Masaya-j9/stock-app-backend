@@ -2,6 +2,7 @@ import { Items } from '../../infrastructure/orm/entities/items.entity';
 import { Categories } from '../../infrastructure/orm/entities/categories.entity';
 import { Category } from '../../domain/inventory/items/entities/category.entity';
 import { Stocks } from '../../infrastructure/orm/entities/stocks.entity';
+import { StockStatuses } from '../../infrastructure/orm/entities/stock.statuses.entity';
 import { OperatorFunction } from 'rxjs';
 
 export type ItemNotFoundOperator = OperatorFunction<Items | undefined, Items>;
@@ -14,6 +15,11 @@ export type ItemListNotFoundOperator = OperatorFunction<
 export type StockListNotFoundOperator = OperatorFunction<
   Stocks[] | undefined,
   Stocks[]
+>;
+
+export type StockStatusNotFoundOperator = OperatorFunction<
+  StockStatuses | undefined,
+  StockStatuses
 >;
 
 export type CategoryNotFoundOperator = OperatorFunction<

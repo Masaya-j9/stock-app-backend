@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { RabbitSubscribe } from '@golevelup/nestjs-rabbitmq';
 import { ItemCreatedEvent } from '../../../../application/services/item/events/item.created.event.publisher.interface';
-import { Observable } from 'rxjs';
+import { map, Observable } from 'rxjs';
 import { Inject } from '@nestjs/common';
 import { StockCreatedEventSubscriberInterface } from '../../../../application/services/stock/events/stock.created.event.subscriber.interface';
 
@@ -21,6 +21,6 @@ export class ItemCreatedEventSubscriber {
   })
   public handleItemCreated(event: ItemCreatedEvent): Observable<void> {
     this.logger.log(`Received item created event for item ID: ${event.id}`);
-    return this.stockCreatedHandler.handle(event);
+    return this.stockCreatedHandler.handle(event).pipe(map(() => void 0));
   }
 }

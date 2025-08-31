@@ -1,24 +1,22 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
 import { StockCreatedEventSubscriberService } from './stock.created.event.subscriber.service';
-import {
-  StocksDatasourceInterface,
-  STOCKS_DATASOURCE_TOKEN,
-} from '../../../../infrastructure/datasources/stocks/stocks.datasource.interface';
+import { StockRegisterServiceInterface } from '../stock.register.interface';
 import { ItemCreatedEvent } from '../../item/events/item.created.event.publisher.interface';
+import { StockRegisterOutputDto } from '../../../dto/output/stock/stock.register.output.dto';
 
 describe('StockCreatedEventSubscriberService', () => {
   let service: StockCreatedEventSubscriberService;
-  let stocksDatasource: StocksDatasourceInterface;
+  let stockRegisterService: StockRegisterServiceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StockCreatedEventSubscriberService,
         {
-          provide: STOCKS_DATASOURCE_TOKEN,
+          provide: 'StockRegisterServiceInterface',
           useValue: {
-            createStockQuantityByItemId: jest.fn(),
+            service: jest.fn(),
           },
         },
       ],
@@ -27,8 +25,8 @@ describe('StockCreatedEventSubscriberService', () => {
     service = module.get<StockCreatedEventSubscriberService>(
       StockCreatedEventSubscriberService
     );
-    stocksDatasource = module.get<StocksDatasourceInterface>(
-      STOCKS_DATASOURCE_TOKEN
+    stockRegisterService = module.get<StockRegisterServiceInterface>(
+      'StockRegisterServiceInterface'
     );
   });
 
@@ -37,85 +35,79 @@ describe('StockCreatedEventSubscriberService', () => {
   });
 
   describe('handle', () => {
-    it('ItemCreatedEvent を受け取り、在庫作成/更新処理を実行して完了する(正常系)', (done) => {
-      const event: ItemCreatedEvent = {
+    it('イベントデータを使ってserviceを呼び出すこと', () => {
+      const mockEvent: ItemCreatedEvent = {
         id: 1,
-        name: 'Item 1',
+        name: 'Test Item',
         quantity: 10,
-        description: 'desc',
+        description: 'Test Description',
         createdAt: new Date(),
         updatedAt: new Date(),
         categoryIds: [1, 2],
       };
 
-      const logSpy = jest
-        .spyOn((service as any).logger, 'log')
-        .mockImplementation(() => {});
-
-      jest
-        .spyOn(stocksDatasource, 'createStockQuantityByItemId')
-        .mockReturnValue(of({} as any));
-
-      service.handle(event).subscribe({
-        next: (value) => {
-          expect(
-            stocksDatasource.createStockQuantityByItemId
-          ).toHaveBeenCalledWith(event.id, event.quantity, event.description);
-          expect(value).toBeUndefined();
-          expect(logSpy).toHaveBeenCalledWith(
-            `Handling stock create for item ID: ${event.id}`
-          );
-          expect(logSpy).toHaveBeenCalledWith(
-            `Stock created/updated for item ID: ${event.id}`
-          );
+      const mockOutput: StockRegisterOutputDto = {
+        id: 'uuid-123',
+        quantity: 10,
+        description: 'Test Description',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        item: {
+          id: 1,
+          name: 'Test Item',
         },
-        error: (error) => done.fail(error),
-        complete: () => done(),
-      });
+        status: {
+          id: 1,
+          name: 'Available',
+          description: 'Stock is available',
+        },
+      };
+
+      const registerStockSpy = jest
+        .spyOn(stockRegisterService, 'service')
+        .mockReturnValue(of(mockOutput));
+
+      service.handle(mockEvent);
+
+      expect(registerStockSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 1,
+          name: 'Test Item',
+          quantity: 10,
+          description: 'Test Description',
+          categoryIds: [1, 2],
+          eventSource: 'item.created',
+        })
+      );
     });
 
-    it('在庫作成でエラーが発生した場合、エラーログを出力してエラーで終わる(異常系)', (done) => {
-      const event: ItemCreatedEvent = {
+    it('serviceからのエラーを適切に処理すること', () => {
+      const mockEvent: ItemCreatedEvent = {
         id: 2,
-        name: 'Item 2',
+        name: 'Test Item 2',
         quantity: 5,
-        description: 'desc2',
+        description: 'Test Description 2',
         createdAt: new Date(),
         updatedAt: new Date(),
         categoryIds: [3],
       };
 
-      const error = new Error('DB error');
+      const registerStockSpy = jest
+        .spyOn(stockRegisterService, 'service')
+        .mockReturnValue(throwError('Error occurred'));
 
-      const logSpy = jest
-        .spyOn((service as any).logger, 'log')
-        .mockImplementation(() => {});
-      const errorSpy = jest
-        .spyOn((service as any).logger, 'error')
-        .mockImplementation(() => {});
+      service.handle(mockEvent);
 
-      jest
-        .spyOn(stocksDatasource, 'createStockQuantityByItemId')
-        .mockReturnValue(throwError(() => error));
-
-      service.handle(event).subscribe({
-        next: () => done.fail('Expected error, but got success'),
-        error: (err) => {
-          expect(
-            stocksDatasource.createStockQuantityByItemId
-          ).toHaveBeenCalledWith(event.id, event.quantity, event.description);
-          expect(logSpy).toHaveBeenCalledWith(
-            `Handling stock create for item ID: ${event.id}`
-          );
-          expect(errorSpy).toHaveBeenCalled();
-          expect(errorSpy.mock.calls[0][0] as string).toContain(
-            `Failed to create/update stock for item ${event.id}`
-          );
-          expect(err).toBe(error);
-          done();
-        },
-        complete: () => done.fail('Expected error, but completed'),
-      });
+      expect(registerStockSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 2,
+          name: 'Test Item 2',
+          quantity: 5,
+          description: 'Test Description 2',
+          categoryIds: [3],
+          eventSource: 'item.created',
+        })
+      );
     });
   });
 });
