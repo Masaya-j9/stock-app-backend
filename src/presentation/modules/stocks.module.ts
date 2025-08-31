@@ -12,6 +12,7 @@ import { ItemsDatasource } from '../../infrastructure/datasources/items/items.da
 import { STOCKS_DATASOURCE_TOKEN } from '../../infrastructure/datasources/stocks/stocks.datasource.interface';
 import { ITEMS_DATASOURCE_TOKEN } from '../../infrastructure/datasources/items/items.datasource.interface';
 import { StockListService } from '../../application/services/stock/stock.list.service';
+import { StockRegisterService } from '../../application/services/stock/stock.register.service';
 import { StockController } from '../controllers/stock/stock.controller';
 import { DatabaseModule } from './database.module';
 
@@ -30,6 +31,10 @@ import { DatabaseModule } from './database.module';
     {
       provide: 'StockListServiceInterface',
       useClass: StockListService,
+    },
+    {
+      provide: 'StockRegisterServiceInterface',
+      useClass: StockRegisterService,
     },
     {
       provide: 'StockQuantityUpdatedEventSubscriberInterface',
@@ -55,6 +60,7 @@ import { DatabaseModule } from './database.module';
   exports: [
     STOCKS_DATASOURCE_TOKEN,
     ITEMS_DATASOURCE_TOKEN,
+    'StockRegisterServiceInterface',
     'StockCreatedEventSubscriberInterface',
     'StockUpdatedEventSubscriberInterface',
     'StockDeletedEventSubscriberInterface',
