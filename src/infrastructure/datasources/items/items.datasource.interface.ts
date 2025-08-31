@@ -12,7 +12,16 @@ export const ITEMS_DATASOURCE_TOKEN = 'ItemsDatasourceInterface' as const;
  */
 export interface ItemsDatasourceInterface {
   /**
-   * アイテムIDの配列に基づいてアイテム情報を取得する
+   *
+   * @param itemIds アイテムIDの配列
+   * @returns アイテムIDの配列に基づいてアイテム情報を取得する
    */
   findItemsByIds(itemIds: number[]): Observable<Items[]>;
+
+  /**
+   * アイテムIDに基づいてアイテム情報を取得する
+   * @param id アイテムID
+   * @returns アイテム情報
+   */
+  findItemById(id: number): Observable<Items | undefined>;
 }

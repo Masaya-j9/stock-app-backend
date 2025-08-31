@@ -2,6 +2,10 @@ import { Injectable } from '@nestjs/common';
 import { InjectDataSource } from '@nestjs/typeorm';
 import { DataSource, EntityManager } from 'typeorm';
 import { Stocks } from '../../orm/entities/stocks.entity';
+import { StockStatuses } from '../../orm/entities/stock.statuses.entity';
+import { Stock } from '../../../domain/inventory/stocks/entities/stock.entity';
+import { StockStatus } from '../../../domain/inventory/stocks/entities/stock.status.entity';
+import { Quantity } from '../../../domain/inventory/items/value-objects/quantity';
 import { StocksDatasourceInterface } from './stocks.datasource.interface';
 import { Pagination } from '../../../domain/common/value-objects/pagination';
 import { from, map, Observable, of, switchMap } from 'rxjs';
@@ -13,6 +17,35 @@ export class StocksDatasource implements StocksDatasourceInterface {
     @InjectDataSource()
     public readonly dataSource: DataSource
   ) {}
+
+  /**
+   * ORMエンティティをドメインエンティティに変換する
+   * @param stocksEntity - ORMの在庫エンティティ
+   * @returns ドメインの在庫エンティティ
+   */
+  private convertToDomainEntity(stocksEntity: Stocks): Stock {
+    const stockStatus = stocksEntity.status
+      ? new StockStatus(
+          stocksEntity.status.id,
+          stocksEntity.status.name,
+          stocksEntity.status.description || '',
+          stocksEntity.status.createdAt,
+          stocksEntity.status.updatedAt,
+          stocksEntity.status.deletedAt
+        )
+      : null;
+
+    return new Stock(
+      stocksEntity.id,
+      Quantity.of(stocksEntity.quantity),
+      stocksEntity.description || '',
+      stocksEntity.createdAt,
+      stocksEntity.updatedAt,
+      stocksEntity.deletedAt,
+      stocksEntity.item?.id || null,
+      stockStatus
+    );
+  }
 
   /**
    * 登録されている在庫の一覧を取得する
@@ -110,6 +143,182 @@ export class StocksDatasource implements StocksDatasourceInterface {
           .where('stocks.item_id = :itemId', { itemId })
           .getOne()
       )
+    );
+  }
+
+  /**
+   * ステータス名と一致するStockStatusesレコードを取得する
+   * @param name - ステータス名
+   * @returns Observable<StockStatuses | undefined> - StockStatusesエンティティまたはundefined
+   */
+  getStatusByName(name: string): Observable<StockStatuses | undefined> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select('stock_statuses')
+        .from(StockStatuses, 'stock_statuses')
+        .where('stock_statuses.name = :name', { name })
+        .getOne()
+    );
+  }
+
+  /**
+   * トランザクション内でステータスIDを指定して在庫を作成・更新する
+   * 永続化されたstockIdのみを返す
+   * @param itemId - 物品ID
+   * @param quantity - 数量
+   * @param statusId - ステータスID
+   * @param description - 説明文（オプション）
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<number> - 永続化されたstock ID
+   */
+  createStockWithStatusIdInTransaction(
+    itemId: number,
+    quantity: number,
+    statusId: number,
+    description?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<number> {
+    const queryRunner = transactionalEntityManager || this.dataSource.manager;
+    const now = new Date();
+
+    return from(
+      queryRunner
+        .createQueryBuilder()
+        .insert()
+        .into(Stocks)
+        .values({
+          item: { id: itemId },
+          quantity: quantity,
+          description: description || null,
+          status: { id: statusId },
+          createdAt: now,
+          updatedAt: now,
+        })
+        .orUpdate(
+          ['quantity', 'description', 'status_id', 'updated_at'],
+          ['item_id']
+        )
+        .execute()
+    ).pipe(
+      switchMap((insertResult) => {
+        // INSERTの場合は新しいIDを取得、UPDATEの場合は既存のレコードを検索
+        const stockId =
+          insertResult.identifiers?.[0]?.id || insertResult.raw?.insertId;
+
+        if (stockId) {
+          // 新規作成された場合：stockIdのみを返す
+          return of(stockId);
+        } else {
+          // 更新された場合：既存のレコードのIDを返す
+          return this.findStockByItemId(itemId, queryRunner).pipe(
+            map((stocksEntity) => {
+              if (!stocksEntity) {
+                throw new Error(`Stock with item ID ${itemId} not found`);
+              }
+              return stocksEntity.id;
+            })
+          );
+        }
+      })
+    );
+  }
+
+  /**
+   * 物品IDと数量、ステータスを指定して在庫を更新、または新規作成する
+   * @param itemId - 対象の物品ID
+   * @param quantity - 設定する数量
+   * @param description - 説明文（オプション）
+   * @param status - ステータス（オプション）
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<Stocks>
+   */
+  createStockQuantityByItemIdWithStatus(
+    itemId: number,
+    quantity: number,
+    description?: string,
+    status?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<Stocks> {
+    const queryRunner = transactionalEntityManager || this.dataSource.manager;
+    const now = new Date();
+    const statusName = status || 'PENDING';
+
+    return this.getStatusByName(statusName).pipe(
+      switchMap((stockStatus) => {
+        if (!stockStatus) {
+          throw new Error(`Status '${statusName}' not found`);
+        }
+        return this.createStockWithStatusId(
+          itemId,
+          quantity,
+          stockStatus.id,
+          description,
+          queryRunner,
+          now
+        );
+      }),
+      switchMap(() => this.findStockByItemId(itemId, queryRunner))
+    );
+  }
+
+  /**
+   * ステータスIDを指定して在庫を作成・更新する
+   * @param itemId - 物品ID
+   * @param quantity - 数量
+   * @param statusId - ステータスID
+   * @param description - 説明文
+   * @param queryRunner - クエリランナー
+   * @param now - 現在時刻
+   * @returns Observable<any>
+   */
+  private createStockWithStatusId(
+    itemId: number,
+    quantity: number,
+    statusId: number,
+    description: string | null,
+    queryRunner: EntityManager,
+    now: Date
+  ): Observable<any> {
+    return from(
+      queryRunner
+        .createQueryBuilder()
+        .insert()
+        .into(Stocks)
+        .values({
+          item: { id: itemId },
+          quantity: quantity,
+          description: description,
+          status: { id: statusId },
+          createdAt: now,
+          updatedAt: now,
+        })
+        .orUpdate(
+          ['quantity', 'description', 'status_id', 'updated_at'],
+          ['item_id']
+        )
+        .execute()
+    );
+  }
+
+  /**
+   * 物品IDで在庫を取得する
+   * @param itemId - 物品ID
+   * @param queryRunner - クエリランナー
+   * @returns Observable<Stocks>
+   */
+  private findStockByItemId(
+    itemId: number,
+    queryRunner: EntityManager
+  ): Observable<Stocks> {
+    return from(
+      queryRunner
+        .createQueryBuilder()
+        .select('stocks')
+        .from(Stocks, 'stocks')
+        .leftJoinAndSelect('stocks.status', 'status')
+        .where('stocks.item_id = :itemId', { itemId })
+        .getOne()
     );
   }
 
