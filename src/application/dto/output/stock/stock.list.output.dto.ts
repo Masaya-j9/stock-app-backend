@@ -51,7 +51,7 @@ export class StockResults {
     type: Number,
   })
   @Expose({ name: 'id' })
-  id: number;
+  id: number | string;
 
   @ApiProperty({
     example: 10,
