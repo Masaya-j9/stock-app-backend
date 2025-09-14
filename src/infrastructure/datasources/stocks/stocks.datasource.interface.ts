@@ -67,6 +67,17 @@ export interface StocksDatasourceInterface {
   ): Observable<void>;
 
   /**
+   * 物品IDと数量、ステータスを指定して、既存の在庫情報を更新
+   */
+  updateStockQuantityByIdWithStatus(
+    itemId: number,
+    quantity: number,
+    description?: string,
+    status?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<Stocks>;
+
+  /**
    * 物品IDをを指定して在庫情報を論理削除
    */
   deletedByItemId(itemId: number): Observable<void>;
@@ -96,4 +107,6 @@ export interface StocksDatasourceInterface {
     description?: string,
     transactionalEntityManager?: EntityManager
   ): Observable<number>;
+
+  findCurrentStockByItemId(itemId: number): Observable<Stocks | undefined>;
 }

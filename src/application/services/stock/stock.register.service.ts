@@ -11,7 +11,7 @@ import {
   mergeMap,
 } from 'rxjs';
 import { Injectable, Logger, Inject, NotFoundException } from '@nestjs/common';
-import { StockRegisterServiceInterface } from './stock.register.interface';
+import { StockRegisterServiceInterface } from './stock.register.service.interface';
 import { StockRegisterInputDto } from '../../dto/input/stock/stock.register.input.dto';
 import { ItemCreatedEvent } from '../item/events/item.created.event.publisher.interface';
 import {

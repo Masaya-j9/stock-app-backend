@@ -300,6 +300,19 @@ export class StocksDatasource implements StocksDatasourceInterface {
         .execute()
     );
   }
+  //queryRunnerなしのバージョン
+  findCurrentStockByItemId(itemId: number): Observable<Stocks | undefined> {
+    return from(
+      this.dataSource
+        .createQueryBuilder()
+        .select('stocks')
+        .from(Stocks, 'stocks')
+        .leftJoinAndSelect('stocks.status', 'status')
+        .where('stocks.item_id = :itemId', { itemId })
+        .andWhere('stocks.deleted_at IS NULL')
+        .getOne()
+    );
+  }
 
   /**
    * 物品IDで在庫を取得する
@@ -307,7 +320,7 @@ export class StocksDatasource implements StocksDatasourceInterface {
    * @param queryRunner - クエリランナー
    * @returns Observable<Stocks>
    */
-  private findStockByItemId(
+  findStockByItemId(
     itemId: number,
     queryRunner: EntityManager
   ): Observable<Stocks> {
@@ -354,7 +367,7 @@ export class StocksDatasource implements StocksDatasourceInterface {
    * @param itemId - 物品ID
    * @param quantity - 更新する数量
    * @param transactionalEntityManager - トランザクション用のEntityManager
-   * @returns Observable<Stocks>
+   * @returns Observable<void>
    */
   updateStockQuantityOnlyById(
     itemId: number,
@@ -371,6 +384,82 @@ export class StocksDatasource implements StocksDatasourceInterface {
         .where('item_id = :itemId', { itemId }) // stocks.item を item_id に修正
         .execute()
     ).pipe(map(() => undefined));
+  }
+
+  /**
+   * 物品IDと数量、ステータスを指定して、既存の在庫情報を更新
+   * @param itemId - 物品ID
+   * @param quantity - 更新する数量
+   * @param description - 説明文（オプション）
+   * @param status - ステータス（オプション）
+   * @param transactionalEntityManager - トランザクション用のEntityManager
+   * @returns Observable<Stocks>
+   */
+  updateStockQuantityByIdWithStatus(
+    itemId: number,
+    quantity: number,
+    description?: string,
+    status?: string,
+    transactionalEntityManager?: EntityManager
+  ): Observable<Stocks> {
+    const queryRunner = transactionalEntityManager || this.dataSource.manager;
+    const now = new Date();
+    const statusName = status || 'PENDING';
+
+    return this.getStatusByName(statusName).pipe(
+      switchMap((stockStatus) => {
+        if (!stockStatus) {
+          throw new Error(`Status '${statusName}' not found`);
+        }
+        return this.updateStockWithStatusId(
+          itemId,
+          quantity,
+          stockStatus.id,
+          description,
+          queryRunner,
+          now
+        );
+      }),
+      switchMap(() => this.findStockByItemId(itemId, queryRunner))
+    );
+  }
+
+  /**
+   * ステータスIDを指定して在庫を更新する
+   * @param itemId - 物品ID
+   * @param quantity - 数量
+   * @param statusId - ステータスID
+   * @param description - 説明文
+   * @param queryRunner - クエリランナー
+   * @param now - 現在時刻
+   * @returns Observable<any>
+   */
+  private updateStockWithStatusId(
+    itemId: number,
+    quantity: number,
+    statusId: number,
+    description: string | null | undefined,
+    queryRunner: EntityManager,
+    now: Date
+  ): Observable<any> {
+    const updateData: any = {
+      quantity: quantity,
+      status: { id: statusId },
+      updatedAt: now,
+    };
+
+    if (description !== undefined) {
+      updateData.description = description;
+    }
+
+    return from(
+      queryRunner
+        .createQueryBuilder()
+        .update(Stocks)
+        .set(updateData)
+        .where('item_id = :itemId', { itemId })
+        .execute()
+    );
   }
 
   /**

@@ -1,24 +1,23 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
 import { StockUpdatedEventSubscriberService } from './stock.updated.event.subscriber.service';
-import {
-  StocksDatasourceInterface,
-  STOCKS_DATASOURCE_TOKEN,
-} from '../../../../infrastructure/datasources/stocks/stocks.datasource.interface';
+import { StockUpdateServiceInterface } from '../stock.update.service.interface';
 import { ItemUpdatedEvent } from '../../item/events/item.updated.event.publisher.interface';
+import { StockUpdateOutputDto } from '../../../dto/output/stock/stock.update.output.dto';
+import { EVENT_SOURCES } from '../constants/event.sources';
 
 describe('StockUpdatedEventSubscriberService', () => {
   let service: StockUpdatedEventSubscriberService;
-  let stocksDatasource: StocksDatasourceInterface;
+  let stockUpdateService: StockUpdateServiceInterface;
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         StockUpdatedEventSubscriberService,
         {
-          provide: STOCKS_DATASOURCE_TOKEN,
+          provide: 'StockUpdateServiceInterface',
           useValue: {
-            updateStockQuantityByItemId: jest.fn(),
+            service: jest.fn(),
           },
         },
       ],
@@ -27,8 +26,8 @@ describe('StockUpdatedEventSubscriberService', () => {
     service = module.get<StockUpdatedEventSubscriberService>(
       StockUpdatedEventSubscriberService
     );
-    stocksDatasource = module.get<StocksDatasourceInterface>(
-      STOCKS_DATASOURCE_TOKEN
+    stockUpdateService = module.get<StockUpdateServiceInterface>(
+      'StockUpdateServiceInterface'
     );
   });
 
@@ -37,7 +36,7 @@ describe('StockUpdatedEventSubscriberService', () => {
   });
 
   describe('handle', () => {
-    it('ItemUpdatedEvent を受け取り、在庫を更新して完了する(正常系)', (done) => {
+    it('ItemUpdatedEvent を受け取り、StockUpdateServiceを呼び出して完了する(正常系)', (done) => {
       const event: ItemUpdatedEvent = {
         id: 10,
         name: 'Item 10',
@@ -48,25 +47,48 @@ describe('StockUpdatedEventSubscriberService', () => {
         categoryIds: [1],
       };
 
+      const expectedOutput: StockUpdateOutputDto = {
+        id: 1,
+        quantity: 7,
+        description: 'updated',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        item: {
+          id: 10,
+          name: 'Item 10',
+        },
+        status: {
+          id: 1,
+          name: 'available',
+          description: 'Available status',
+        },
+      };
+
       const logSpy = jest
         .spyOn((service as any).logger, 'log')
         .mockImplementation(() => {});
 
       jest
-        .spyOn(stocksDatasource, 'updateStockQuantityByItemId')
-        .mockReturnValue(of(void 0));
+        .spyOn(stockUpdateService, 'service')
+        .mockReturnValue(of(expectedOutput));
 
       service.handle(event).subscribe({
-        next: (value) => {
-          expect(
-            stocksDatasource.updateStockQuantityByItemId
-          ).toHaveBeenCalledWith(event.id, event.quantity, event.description);
-          expect(value).toBeUndefined();
-          expect(logSpy).toHaveBeenCalledWith(
-            `Handling stock update for item ID: ${event.id}`
+        next: (result) => {
+          // StockUpdateInputDtoが正しく作成されていることを確認
+          expect(stockUpdateService.service).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: event.id,
+              name: event.name,
+              quantity: event.quantity,
+              description: event.description,
+              updatedAt: event.updatedAt,
+              categoryIds: event.categoryIds,
+              eventSource: EVENT_SOURCES.ITEM_UPDATED,
+            })
           );
+          expect(result).toEqual(expectedOutput);
           expect(logSpy).toHaveBeenCalledWith(
-            `Stock updated for item ID: ${event.id}`
+            `Handling stock update event for item ID: ${event.id}`
           );
         },
         error: (error) => done.fail(error),
@@ -74,7 +96,7 @@ describe('StockUpdatedEventSubscriberService', () => {
       });
     });
 
-    it('在庫更新でエラーが発生した場合、エラーログを出力してエラーで終わる(異常系)', (done) => {
+    it('StockUpdateServiceでエラーが発生した場合、エラーが伝播される(異常系)', (done) => {
       const event: ItemUpdatedEvent = {
         id: 11,
         name: 'Item 11',
@@ -85,31 +107,32 @@ describe('StockUpdatedEventSubscriberService', () => {
         categoryIds: [2],
       };
 
-      const error = new Error('DB error');
+      const error = new Error('Stock update service error');
 
       const logSpy = jest
         .spyOn((service as any).logger, 'log')
         .mockImplementation(() => {});
-      const errorSpy = jest
-        .spyOn((service as any).logger, 'error')
-        .mockImplementation(() => {});
 
       jest
-        .spyOn(stocksDatasource, 'updateStockQuantityByItemId')
+        .spyOn(stockUpdateService, 'service')
         .mockReturnValue(throwError(() => error));
 
       service.handle(event).subscribe({
         next: () => done.fail('Expected error, but got success'),
         error: (err) => {
-          expect(
-            stocksDatasource.updateStockQuantityByItemId
-          ).toHaveBeenCalledWith(event.id, event.quantity, event.description);
-          expect(logSpy).toHaveBeenCalledWith(
-            `Handling stock update for item ID: ${event.id}`
+          expect(stockUpdateService.service).toHaveBeenCalledWith(
+            expect.objectContaining({
+              id: event.id,
+              name: event.name,
+              quantity: event.quantity,
+              description: event.description,
+              updatedAt: event.updatedAt,
+              categoryIds: event.categoryIds,
+              eventSource: EVENT_SOURCES.ITEM_UPDATED,
+            })
           );
-          expect(errorSpy).toHaveBeenCalled();
-          expect(errorSpy.mock.calls[0][0] as string).toContain(
-            `Failed to update stock for item ${event.id}`
+          expect(logSpy).toHaveBeenCalledWith(
+            `Handling stock update event for item ID: ${event.id}`
           );
           expect(err).toBe(error);
           done();

@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { of, throwError } from 'rxjs';
 import { StockCreatedEventSubscriberService } from './stock.created.event.subscriber.service';
-import { StockRegisterServiceInterface } from '../stock.register.interface';
+import { StockRegisterServiceInterface } from '../stock.register.service.interface';
 import { ItemCreatedEvent } from '../../item/events/item.created.event.publisher.interface';
 import { StockRegisterOutputDto } from '../../../dto/output/stock/stock.register.output.dto';
 

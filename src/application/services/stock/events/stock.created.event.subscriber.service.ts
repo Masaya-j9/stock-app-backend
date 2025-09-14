@@ -1,6 +1,6 @@
 import { Injectable, Logger, Inject } from '@nestjs/common';
 import { Observable } from 'rxjs';
-import { StockRegisterServiceInterface } from '../stock.register.interface';
+import { StockRegisterServiceInterface } from '../stock.register.service.interface';
 import { ItemCreatedEvent } from '../../item/events/item.created.event.publisher.interface';
 import { StockCreatedEventSubscriberInterface } from './stock.created.event.subscriber.interface';
 import { StockRegisterOutputDto } from '../../../dto/output/stock/stock.register.output.dto';

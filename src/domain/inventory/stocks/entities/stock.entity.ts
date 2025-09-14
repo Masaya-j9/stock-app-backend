@@ -95,6 +95,40 @@ export class Stock {
   }
 
   /**
+   * 既存Stock entityを更新するfactoryメソッド
+   * @param existingStock - 既存のStockエンティティ
+   * @param updates - 更新したい項目のオブジェクト
+   * @returns Stock - 更新されたStockエンティティ
+   * @throws Error - 永続化されていないStockを更新しようとした場合
+   */
+  static update(
+    existingStock: Stock,
+    quantity?: Quantity,
+    description?: string,
+    status?: StockStatus
+  ): Stock {
+    // 永続化されたStockのみ更新可能
+    if (!existingStock.isPersisted()) {
+      throw new Error(
+        'Cannot update non-persisted Stock. Only persisted Stock entities can be updated.'
+      );
+    }
+
+    const now = new Date();
+
+    return new Stock(
+      existingStock.id, // 既存のIDを保持
+      quantity ?? existingStock.quantity,
+      description ?? existingStock.description,
+      existingStock.createdAt, // 作成日時は既存のものを保持
+      now, // updatedAtのみ現在時刻に更新
+      existingStock.deletedAt, // 削除日時も既存のものを保持
+      existingStock.itemId,
+      status ?? existingStock.status
+    );
+  }
+
+  /**
    * 永続化されたエンティティかどうかを判定する
    * @returns boolean - 永続化されている場合はtrue
    */
