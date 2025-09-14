@@ -13,6 +13,7 @@ import { STOCKS_DATASOURCE_TOKEN } from '../../infrastructure/datasources/stocks
 import { ITEMS_DATASOURCE_TOKEN } from '../../infrastructure/datasources/items/items.datasource.interface';
 import { StockListService } from '../../application/services/stock/stock.list.service';
 import { StockRegisterService } from '../../application/services/stock/stock.register.service';
+import { StockUpdateService } from '../../application/services/stock/stock.update.service';
 import { StockController } from '../controllers/stock/stock.controller';
 import { DatabaseModule } from './database.module';
 
@@ -37,6 +38,10 @@ import { DatabaseModule } from './database.module';
       useClass: StockRegisterService,
     },
     {
+      provide: 'StockUpdateServiceInterface',
+      useClass: StockUpdateService,
+    },
+    {
       provide: 'StockQuantityUpdatedEventSubscriberInterface',
       useClass: StockQuantityUpdatedEventSubscriberService,
     },
@@ -45,7 +50,7 @@ import { DatabaseModule } from './database.module';
       useClass: StockCreatedEventSubscriberService,
     },
     {
-      provide: 'StockUpdatedEventSubscriberInterface',
+      provide: 'StockUpdateEventSubscriberInterface',
       useClass: StockUpdatedEventSubscriberService,
     },
     {
@@ -61,8 +66,9 @@ import { DatabaseModule } from './database.module';
     STOCKS_DATASOURCE_TOKEN,
     ITEMS_DATASOURCE_TOKEN,
     'StockRegisterServiceInterface',
+    'StockUpdateServiceInterface',
     'StockCreatedEventSubscriberInterface',
-    'StockUpdatedEventSubscriberInterface',
+    'StockUpdateEventSubscriberInterface',
     'StockDeletedEventSubscriberInterface',
     'StockRestoredEventSubscriberInterface',
     'StockQuantityUpdatedEventSubscriberInterface',
